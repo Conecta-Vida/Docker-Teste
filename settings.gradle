@@ -1,7 +1,5 @@
 rootProject.name = 'conecta-vida-backend'
 
-// Monorepo Gradle: um único build com três módulos Java.
-//  - core       -> biblioteca compartilhada (entidades, repositórios, serviços, rotas comuns)
-//  - admin-api  -> API do painel administrativo web (porta 8080)
-//  - mobile-api -> API do aplicativo do cidadão (porta 8081)
-include 'core', 'admin-api', 'mobile-api'
+include 'core'
+include 'admin-api'
+include 'mobile-api'

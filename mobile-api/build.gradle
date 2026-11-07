@@ -1,9 +1,14 @@
-apply plugin: 'org.springframework.boot'
-
-dependencies {
-    implementation project(':core')
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
 }
 
-// Gera somente o JAR executável (app.jar), sem o "-plain.jar".
-tasks.named('jar') { enabled = false }
-tasks.named('bootJar') { archiveFileName = 'app.jar' }
+java {
+    sourceCompatibility = '21'
+}
+
+dependencies {
+    // Importa as entidades, repositórios e as ferramentas do módulo base
+    implementation project(':core')
+}

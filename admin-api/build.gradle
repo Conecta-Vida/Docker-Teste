@@ -1,9 +1,19 @@
-apply plugin: 'org.springframework.boot'
-
-dependencies {
-    implementation project(':core')
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
 }
 
-// Gera somente o JAR executável (app.jar), sem o "-plain.jar".
-tasks.named('jar') { enabled = false }
-tasks.named('bootJar') { archiveFileName = 'app.jar' }
+java {
+    sourceCompatibility = '21'
+}
+
+dependencies {
+    // Importa as entidades, repositórios e as ferramentas do módulo base
+    implementation project(':core')
+
+    // Dependência exclusiva do Painel para gerar relatórios PDF
+    implementation 'com.itextpdf:itext7-core:7.2.5'
+
+    runtimeOnly 'org.postgresql:postgresql'
+}

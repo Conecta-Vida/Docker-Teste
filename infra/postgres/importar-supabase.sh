@@ -3,7 +3,8 @@
 # Copia os dados do Supabase para o Postgres da stack (Docker Swarm).
 #
 # Uso (Git Bash / Linux), com a stack já rodando:
-#   export SUPABASE_DB_URL='postgresql://postgres.SEU_PROJETO:SENHA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres'
+#   export SUPABASE_DB_URL='postgresql://postgres.SEU_PROJETO@aws-1-sa-east-1.pooler.supabase.com:5432/postgres'
+#   export SUPABASE_DB_PASSWORD='sua senha'     # separada da URL: aceita @ # / % etc.
 #   ./infra/postgres/importar-supabase.sh
 #
 # - Use a porta 5432 (Session pooler) do Supabase, não a 6543.
@@ -26,7 +27,8 @@ PG=${PG_CONTAINER:-$(docker ps -q -f name=conectavida_postgres | head -1)}
 [ -n "$PG" ] || { echo "Container do Postgres da stack não encontrado. A stack está rodando?"; exit 1; }
 
 local_sql()  { docker exec -i "$PG" psql -X -q -v ON_ERROR_STOP=1 -U "$PG_USER" -d "$PG_DB" "$@"; }
-remoto_sql() { docker run --rm -i "$IMG" psql -X -q -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL" "$@"; }
+# A senha vai por PGPASSWORD (variável de ambiente), sem precisar escapar na URL
+remoto_sql() { PGPASSWORD="${SUPABASE_DB_PASSWORD:-}" docker run --rm -i -e PGPASSWORD -e PGSSLMODE=require "$IMG" psql -X -q -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL" "$@"; }
 
 colunas() { # $1 = local|remoto, $2 = tabela -> uma coluna por linha
   q="select column_name from information_schema.columns where table_schema='public' and table_name='$2' order by ordinal_position"
@@ -34,7 +36,15 @@ colunas() { # $1 = local|remoto, $2 = tabela -> uma coluna por linha
 }
 
 echo "==> Testando conexão com o Supabase..."
-remoto_sql -tAc "select 'ok'" >/dev/null
+if ! remoto_sql -tAc "select 'ok'" >/dev/null; then
+  echo
+  echo "Falha ao conectar. Confira:"
+  echo "  - usuário no formato postgres.SEU_PROJETO (não só 'postgres')"
+  echo "  - porta 5432 (Session pooler)"
+  echo "  - senha atual do banco (Supabase > Project Settings > Database);"
+  echo "    passe-a em SUPABASE_DB_PASSWORD, fora da URL"
+  exit 1
+fi
 
 echo "==> Limpando os dados de demonstração do Postgres local"
 local_sql -c "TRUNCATE $(echo $TABELAS | sed 's/ /, /g') RESTART IDENTITY CASCADE"

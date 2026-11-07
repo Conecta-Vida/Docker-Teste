@@ -380,14 +380,18 @@ export CONECTA_API_SALT='o-mesmo-salt-de-antes'
 ```
 
 ```bash
-export SUPABASE_DB_URL='postgresql://postgres.SEU_PROJETO:SENHA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres'
+export SUPABASE_DB_URL='postgresql://postgres.SEU_PROJETO@aws-1-sa-east-1.pooler.supabase.com:5432/postgres'
+```
+
+```bash
+export SUPABASE_DB_PASSWORD='senha-atual-do-banco'
 ```
 
 ```bash
 ./infra/postgres/importar-supabase.sh
 ```
 
-Use a porta **5432** (Session pooler). O script copia usuários, instituições, comunicações, inscrições e logs, ajusta os contadores de id e limpa o cache do Redis.
+Use a porta **5432** (Session pooler) e o usuário no formato `postgres.SEU_PROJETO`. A senha vai separada, então pode ter `@`, `#` ou `/` sem problema. O script copia usuários, instituições, comunicações, inscrições e logs, ajusta os contadores de id e limpa o cache do Redis.
 
 ## 6. Testes realizados
 

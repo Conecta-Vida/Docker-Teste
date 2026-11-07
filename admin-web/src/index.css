@@ -1,53 +1,46 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  :root {
-    /* Fontes */
-    --sans: 'Overpass', system-ui, sans-serif;
-    --heading: 'Overpass', sans-serif;
-    
-    /* Suas Cores do Projeto Antigo */
-    --text: #6b6375;
-    --text-h: #08060d;
-    --bg: #fff;
-    --accent: #aa3bff;
-    
-    /* Shadcn & Sidebar (Luz) */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 271 91% 65%; /* Seu roxo Overpass */
-    --primary-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --radius: 0.75rem;
+/* Suaviza a rolagem da página inteira */
+html {
+  scroll-behavior: smooth;
+}
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 271 91% 65%;
-    --sidebar-border: 220 13% 91%;
+/* =========================================
+   Estilização Profissional da Scrollbar 
+   ========================================= */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* slate-300 do Tailwind */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* slate-400 do Tailwind */
+}
+
+/* =========================================
+   Animações Globais
+   ========================================= */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
   }
 }
 
-@layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-    font-family: var(--sans);
-    font-variant-numeric: tabular-nums;
-  }
-
-  h1, h2, h3, h4 {
-    font-family: var(--heading);
-    @apply font-bold tracking-tight text-slate-900;
-  }
-
-  h1 { @apply text-4xl mb-6; }
-  h2 { @apply text-2xl mb-4; }
-}
-
-/* Estilo para a tabela ficar mais "limpa" */
-.table-container {
-  @apply rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden;
+/* Esta classe está a ser usada em todas as suas páginas (Dashboard, Instituições, etc) */
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
 }

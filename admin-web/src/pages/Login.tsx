@@ -1,99 +1,79 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { HeartPulse, Lock, Mail, Loader2 } from "lucide-react";
-import { authService } from "../services/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Shield, Lock, Mail } from 'lucide-react';
 
 export default function Login() {
-  const navigate = useNavigate(); // Hook para redirecionar o usuário de página
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const [loading, setLoading] = useState(false); // Estado para animação de carregamento do botão
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Impede o recarregamento padrão da página ao enviar o formulário
-    
-    if (!email || !senha) {
-      toast.warning("Por favor, preencha todos os campos.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Consome o serviço de autenticação integrado à API Spring Boot
-      const usuarioLogado = await authService.login(email, senha);
-      
-      // Armazena a sessão do administrador em formato string no LocalStorage da máquina
-      localStorage.setItem("@conecta:admin", JSON.stringify(usuarioLogado));
-      
-      toast.success(`Bem-vindo de volta, ${usuarioLogado.nome}!`);
-      navigate("/"); // Redireciona imediatamente para a home (Dashboard)
-    } catch (error: any) {
-      // 🟢 AJUSTE DE OURO: Captura a mensagem customizada em formato JSON enviada pelo AuthController do Spring Boot
-      const mensagemServidor = error.response?.data?.mensagem;
-      toast.error(mensagemServidor || error.message || "Erro ao tentar realizar o login.");
-    } finally {
-      setLoading(false);
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email && password) {
+      navigate('/');
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
-        {/* LOGO E TÍTULO */}
-        <div className="flex flex-col items-center text-center space-y-2">
-          <div className="rounded-2xl bg-blue-600 p-3 text-white shadow-md shadow-blue-200">
-            <HeartPulse className="h-8 w-8 animate-pulse" />
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 animate-fade-in">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <Shield className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Conecta à Vida</h1>
-          <p className="text-sm text-slate-500 font-medium">Painel Administrativo de Saúde Pública</p>
         </div>
+        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+          Conecta Vida
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Painel de Gestão Administrativa
+        </p>
+      </div>
 
-        {/* FORMULÁRIO */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="font-bold text-slate-700">E-mail Corporativo</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-              <Input
-                type="email"
-                placeholder="nome@sistema.com"
-                className="pl-10 bg-slate-50/50 focus-visible:ring-blue-600"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow-xl shadow-blue-900/5 sm:rounded-xl sm:px-10 border border-gray-100">
+          <form className="space-y-6" onSubmit={handleLogin}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email Corporativo</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input required type="email" placeholder="admin@conectavida.com"
+                  className="block w-full pl-10 border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  value={email} onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <Label className="font-bold text-slate-700">Senha de Acesso</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-              <Input
-                type="password"
-                placeholder="••••••••"
-                className="pl-10 bg-slate-50/50 focus-visible:ring-blue-600"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-              />
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Palavra-passe</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input required type="password" placeholder="••••••••"
+                  className="block w-full pl-10 border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  value={password} onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
 
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 font-bold h-11 text-white hover:bg-blue-700 shadow shadow-blue-100"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Autenticando...</span>
-            ) : (
-              "Entrar no Sistema"
-            )}
-          </Button>
-        </form>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input id="remember-me" type="checkbox" className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer" />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 cursor-pointer">Lembrar-me</label>
+              </div>
+              <div className="text-sm">
+                <a href="#" className="font-medium text-blue-600 hover:text-blue-500">Esqueceu a senha?</a>
+              </div>
+            </div>
+
+            <button type="submit" className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+              Entrar no Sistema
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

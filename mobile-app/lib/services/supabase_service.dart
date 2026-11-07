@@ -333,6 +333,8 @@ class SupabaseService {
     String categoriaOriginal,
   ) {
     final categoria = categoriaOriginal.toLowerCase();
+    // O backend novo grava "Alerta"/"Campanha"; o antigo, "ALERTA"/"CAMPANHA"
+    tipo = tipo.toUpperCase();
     if (tipo == 'ALERTA' ||
         categoria.contains('urg') ||
         categoria.contains('alert')) {

@@ -1,30 +1,15 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/noticia.dart';
 import '../models/usuario.dart';
 import '../controllers/noticia_controller.dart';
 
 class SupabaseService {
-  // IMPORTANTE:
-  // Se rodar no Emulador Android, use 'http://10.0.2.2:8080/api'
-  // Se rodar no Chrome (Web), use 'http://localhost:8080/api'
-  static String baseUrl = 'http://localhost:8080/api';
+  // Definida no main.dart por ApiConfig.resolverBaseUrl()
+  // (dart-define API_BASE_URL > .env > padrão da plataforma, porta 8081).
+  static String baseUrl = 'http://localhost:8081/api';
   static String? jwtToken;
-
-  static Future<void> initializeCredentials(String url, String anonKey) async {
-    final envBaseUrl = dotenv.env['API_BASE_URL']?.trim();
-
-    if (envBaseUrl != null && envBaseUrl.isNotEmpty) {
-      baseUrl = envBaseUrl;
-      return;
-    }
-
-    if (url.startsWith('http') && url.contains('/api')) {
-      baseUrl = url;
-    }
-  }
 
   static Future<void> init() async {}
   static Future<void> syncDefaultNoticias() async {}

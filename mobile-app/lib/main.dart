@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'global/api_config.dart';
 import 'global/appCor.dart';
 import 'providers/usuario_provider.dart';
 import 'screens/splash_screen.dart';
@@ -19,27 +20,25 @@ Future<void> main() async {
     // Abre a "caixa" chamada 'preferencias' pra usar na pag. settings
     await Hive.openBox('preferencias');
 
-    // Carrega o .env com os dados do supabase pra entrar
-    await dotenv.load(fileName: ".env");
+    // Configuração do app (versionada, sem segredos). Veja assets/config/app.env
+    await dotenv.load(fileName: "assets/config/app.env", isOptional: true);
+  } catch (e) {
+    print('⚠️ app.env não carregado, usando configuração padrão: $e');
+  }
 
-    // extrai o url e chave publica pra variavel dotenv.
-    await SupabaseService.initializeCredentials(
-      dotenv.env['SUPABASE_URL']!,
-      dotenv.env['SUPABASE_ANON_KEY']!,
-    );
+  // URL da mobile-api (dart-define > .env > padrão da plataforma)
+  SupabaseService.baseUrl = ApiConfig.resolverBaseUrl();
+  print('🌐 API: ${SupabaseService.baseUrl}');
 
-    // Inicia ligação com banco de dados
-    await SupabaseService.init();
-    await SupabaseService.syncDefaultNoticias();
-
+  try {
     // Inicializa Firebase e serviço de push notification
     await Firebase.initializeApp();
     await PushNotificationService.inicializar(
-      apiBaseUrl: dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080/api',
+      apiBaseUrl: SupabaseService.baseUrl,
     );
   } catch (e) {
-    // Se esquecer do ficheiro .env ou a net falhar, dá erro
-    print('🚨 ERRO FATAL NO ARRANQUE: $e');
+    // Sem Firebase configurado o app continua funcionando, só sem push
+    print('⚠️ Push notifications indisponíveis: $e');
   }
 
   runApp(

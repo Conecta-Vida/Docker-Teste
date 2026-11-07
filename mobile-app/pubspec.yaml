@@ -30,7 +30,7 @@ flutter:
   uses-material-design: true
   
   assets:
-    - .env
+    - assets/config/app.env
     - assets/images/background.png
     - assets/images/vacina_banner.png
     

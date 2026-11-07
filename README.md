@@ -1,143 +1,89 @@
-# ☕ Conecta à Vida - API Backend RESTful e Barramento de Dados
-
-<p align="center">
-<strong>O motor inteligente e barramento de microsserviços RESTful responsável pelo processamento de regras de negócio, persistência física de dados em nuvem, controle volumétrico de dados e auditoria imutável. Fornece endpoints rápidos, assíncronos e tipados tanto para o Painel Administrativo Web (React) quanto para o Aplicativo Móvel do Cidadão (Flutter).</strong>
-</p>
+# Conecta à Vida: monorepo (backend + painel web + app + Docker Swarm)
 
 <p align="center">
 <img src="https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 17">
-<img src="https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot 4.0.5">
-<img src="https://img.shields.io/badge/PostgreSQL-17-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL 17">
-<img src="https://img.shields.io/badge/Supabase-Pooler-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase">
-<img src="https://img.shields.io/badge/Gradle-8.x-02303A?style=for-the-badge&logo=gradle&logoColor=white" alt="Gradle">
+<img src="https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot">
+<img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
+<img src="https://img.shields.io/badge/Flutter-3-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter">
+<img src="https://img.shields.io/badge/Docker%20Swarm-Alpine-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Swarm">
+<img src="https://img.shields.io/badge/RabbitMQ-4-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white" alt="RabbitMQ">
 </p>
 
-<p align="center">
-  <a href="https://youtu.be/uTAA0S7l8w0" title="Clique para assistir à demonstração">
-    <img src="https://img.shields.io/badge/Assista%20à%20Demonstração-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Assista à Demonstração">
-  </a>
-</p>
+Plataforma que centraliza informações de saúde pública: notícias, alertas epidemiológicos, campanhas de vacinação e doação de sangue, e a rede de unidades de saúde. O gestor publica pelo **painel web** e o cidadão recebe tudo no **aplicativo**.
 
------
+## 👥 Autores
+Gabriel Dias Ribeiro · Gustavo Barros Tenório · Luiz Henrique Gonçalves · Renan Valença Bueno Rodrigues · Maycon Cabral da Silva
 
-## 👥 Autores e Instituição
-* **Luiz Henrique Gonçalves**
-* **Gustavo**
-* **Gabriel**
-* **Renan**
-* **Maycon**
+**IFSP - Câmpus Bragança Paulista**, Tecnologia em Análise e Desenvolvimento de Sistemas
 
-**IFSP - Câmpus Bragança Paulista** *Curso Superior de Tecnologia em Análise e Desenvolvimento de Sistemas*
+## 📁 Estrutura
 
------
-
-## 📖 Sobre o Módulo Backend (API)
-
-A API REST do **Conecta à Vida** foi projetada sob o padrão arquitetural de camadas isoladas, separando estritamente as responsabilidades de entrada de rede (`Controllers`), validações e criptografia (`Services`), abstração de persistência (`Repositories`) e modelagem física relacional (`Domain`). 
-
-Ela centraliza e processa de forma transacional todas as regras críticas do sistema, garantindo integridade referencial ao se comunicar diretamente com o cluster de alto desempenho do **Supabase (PostgreSQL)** localizado geograficamente na infraestrutura AWS de São Paulo.
-
-## Pré-requisitos
-
-Antes de começar, certifique-se de que a sua máquina possui os seguintes componentes instalados:
-
-* **Java Development Kit (JDK) 17**: Necessário para rodar o Spring Boot.
-* **Git**: Para clonar o repositório.
-* **NGINX** (Opcional, mas recomendado): Para testar o balanceamento de carga na porta 80.
-* **Thunder Client / Postman**: Para disparar requisições e testar a API.
-
-*(Nota: O banco de dados PostgreSQL já está hospedado em nuvem via **Supabase**, então você não precisa instalar nenhum banco de dados localmente!)*
-
----
-
-## Passo 1: Configuração do Ambiente
-
-1. **Clone o repositório** para a sua máquina:
-   ```bash
-   git clone <URL_DO_SEU_REPOSITORIO>
-   cd conecta-a-vida-api
-   ```
-
-2. **Verifique as variáveis de ambiente**:
-   Acesse o arquivo `src/main/resources/application.properties`. A conexão com o Supabase já está configurada de forma nativa. Garanta que o CORS permite a comunicação com o front-end e o NGINX:
-   ```properties
-   app.security.allowed-origins=${CONECTA_CORS_ORIGINS:http://localhost:5173,http://localhost:3000,http://localhost:4000,http://localhost}
-   ```
-
----
-
-## Passo 2: Executando a Aplicação (Modo Simples)
-
-Para rodar a aplicação no modo padrão (uma única instância na porta `8080`), abra o terminal na pasta raiz do projeto e execute o Wrapper do Gradle:
-
-**No Windows:**
-```cmd
-gradlew.bat bootRun
+```
+.
+├── core/          # módulo Java compartilhado (entidades, repositórios, serviços, RabbitMQ)
+├── admin-api/     # API do painel administrativo  -> porta 8080  (+ Dockerfile)
+├── mobile-api/    # API do aplicativo do cidadão  -> porta 8081  (+ Dockerfile)
+├── admin-web/     # painel administrativo React + Vite, servido por Nginx (+ Dockerfile)
+├── mobile-app/    # aplicativo Flutter do cidadão
+├── infra/
+│   ├── postgres/init/   # schema e dados de demonstração do banco
+│   └── swarm/seminario.sh  # roteiro automatizado do seminário (Swarm + DinD)
+├── docker-compose.yml   # stack do Docker Swarm
+└── documentacao/        # especificação, guia do Swarm, vídeo e imagens
 ```
 
-**No Linux / macOS:**
+`core`, `admin-api` e `mobile-api` formam **um único build Gradle** (`settings.gradle`).
+
+## 🐳 Rodar tudo no Docker Swarm (3 nós)
+
 ```bash
-chmod +x gradlew
-./gradlew bootRun
+./infra/swarm/seminario.sh subir
 ```
 
-A API estará disponível em: `http://localhost:8080`
+Depois abra o **Visualizer** em http://localhost:8085 e o **painel** em http://localhost:8088 (`admin@conectavida.com` / `admin123`).
 
----
+Para demonstrar a escalabilidade:
 
-## Passo 3: Executando com Balanceamento de Carga (NGINX)
-
-Para replicar o ambiente de produção (Cenário B dos testes do JMeter), precisamos subir **duas instâncias** da API e usar o NGINX para distribuir o tráfego.
-
-### 1. Suba a Instância 1 (Porta 8080)
-Abra um terminal e rode:
 ```bash
-./gradlew bootRun
+./infra/swarm/seminario.sh escalar
 ```
 
-### 2. Suba a Instância 2 (Porta 8081)
-Abra um **segundo terminal** na mesma pasta e rode o projeto alterando a porta dinamicamente:
+📘 Guia completo, com cada Dockerfile e o compose explicados linha a linha: **[documentacao/DOCKER_SWARM.md](documentacao/DOCKER_SWARM.md)**
+🎬 Vídeo: **[documentacao/midia/demo-conectavida-swarm.mp4](documentacao/midia/demo-conectavida-swarm.mp4)**
+
+## 💻 Desenvolvimento local (sem Swarm)
+
+**1. Banco e RabbitMQ** em containers:
+
 ```bash
-./gradlew bootRun --args='--server.port=8081'
+docker run -d --name cv-postgres -p 5432:5432 -e POSTGRES_DB=conectavida -e POSTGRES_USER=conectavida -e POSTGRES_PASSWORD=conectavida -v "$PWD/infra/postgres/init:/docker-entrypoint-initdb.d:ro" postgres:17-alpine
 ```
 
-### 3. Configure e Inicie o NGINX
-1. Baixe o NGINX para o seu sistema operacional.
-2. Substitua o arquivo `conf/nginx.conf` da instalação do NGINX pelo arquivo de configuração fornecido na pasta `documentacao/conf_nginx.zip` do nosso repositório.
-3. Inicie o NGINX (no Windows, basta dar um duplo clique em `nginx.exe` ou rodar `start nginx` no terminal).
+**2. APIs** (JDK 17 ou mais novo), cada uma num terminal:
 
-Agora, a sua API estará respondendo balanceada na porta 80.
-**URL Base da API Balanceada:** `http://localhost/api`
-
----
-
-## Passo 4: Testando as Rotas
-
-Com a aplicação rodando (com ou sem NGINX), você pode testar se tudo está funcionando abrindo o navegador ou o Thunder Client e acessando:
-
-* **Status e Métricas:** `GET http://localhost:8080/api/dashboard/stats`
-* **Listar Usuários:** `GET http://localhost:8080/api/usuarios`
-* **Listar Notícias:** `GET http://localhost:8080/api/comunicacoes`
-
-Entre outras rotas!
-
-*(Se estiver usando o NGINX, troque `8080` apenas por `localhost`)*
-
----
-
-## Passo 5: Compilando para Produção
-
-Se você precisar gerar o arquivo executável `.jar` final para fazer o deploy em um servidor em nuvem (como AWS, Heroku ou Railway), execute:
-
-**No Windows:**
-```cmd
-gradlew.bat bootJar
-```
-
-**No Linux / macOS:**
 ```bash
-./gradlew bootJar
+./gradlew :admin-api:bootRun
 ```
 
-© 2026 Conecta à Vida. Sistema homologado para fins acadêmicos. IFSP Bragança Paulista.
+```bash
+./gradlew :mobile-api:bootRun
+```
 
+Sem RabbitMQ, a mensageria fica desligada (`MENSAGERIA_ENABLED=false`, o padrão) e o push é enviado diretamente.
+
+**3. Painel web** (Node 18+). O Vite encaminha `/api` para `localhost:8080`:
+
+```bash
+cd admin-web && npm install && npm run dev
+```
+
+**4. App Flutter.** Por padrão ele usa `http://10.0.2.2:8081/api` no emulador Android e `http://localhost:8081/api` no Chrome. Para um celular físico, informe o IP do PC:
+
+```bash
+cd mobile-app && flutter run --dart-define=API_BASE_URL=http://192.168.0.10:8081/api
+```
+
+## 🔑 Configuração
+Variáveis disponíveis em [`.env.example`](.env.example). Os principais endpoints estão descritos em [`documentacao/`](documentacao/).
+
+© 2026 Conecta à Vida. Projeto acadêmico do IFSP Bragança Paulista.

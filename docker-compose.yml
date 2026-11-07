@@ -2,9 +2,9 @@
 # Stack Docker Swarm - Conecta Vida
 #   docker stack deploy -c docker-compose.yml conectavida
 #
-# 5 serviços na rede overlay "conectavida-net":
-#   postgres (5432) | rabbitmq (5672/15672) | admin-api (8080)
-#   mobile-api (8081) | visualizer (8085)
+# Serviços na rede overlay "conectavida-net":
+#   1 postgres (5432)   2 rabbitmq (5672/15672)   3 admin-api (8080)
+#   4 mobile-api (8081) 5 visualizer (8085)       6 admin-web (8088, front React)
 #
 # As imagens das APIs são lidas do registry local do cluster
 # (REGISTRY=127.0.0.1:5000), para que os workers também consigam baixá-las.
@@ -52,6 +52,8 @@ services:
     networks:
       - conectavida-net
     deploy:
+      labels:
+        conectavida.camada: "dados"
       replicas: 1
       placement:
         constraints: [node.role == manager]
@@ -78,6 +80,8 @@ services:
     networks:
       - conectavida-net
     deploy:
+      labels:
+        conectavida.camada: "mensageria"
       replicas: 1
       placement:
         constraints: [node.role == manager]
@@ -98,6 +102,8 @@ services:
     networks:
       - conectavida-net
     deploy:
+      labels:
+        conectavida.camada: "backend-admin"
       replicas: 2
       update_config:
         parallelism: 1
@@ -125,6 +131,8 @@ services:
     networks:
       - conectavida-net
     deploy:
+      labels:
+        conectavida.camada: "backend-mobile"
       replicas: 3
       update_config:
         parallelism: 1
@@ -138,6 +146,28 @@ services:
         reservations:
           memory: 128M
 
+  # 6. Front-end: painel administrativo (React servido pelo Nginx) ---
+  admin-web:
+    image: ${REGISTRY:-127.0.0.1:5000}/conectavida/admin-web:${TAG:-1.0}
+    ports:
+      - "8088:80"
+    depends_on:
+      - admin-api
+    networks:
+      - conectavida-net
+    deploy:
+      replicas: 2
+      labels:
+        conectavida.camada: "frontend"
+      update_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 64M
+
   # 5. Painel gráfico do cluster ------------------------------------
   visualizer:
     image: dockersamples/visualizer:stable
@@ -148,6 +178,8 @@ services:
     networks:
       - conectavida-net
     deploy:
+      labels:
+        conectavida.camada: "monitoramento"
       replicas: 1
       placement:
         constraints: [node.role == manager]

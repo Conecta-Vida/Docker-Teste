@@ -43,6 +43,7 @@ subir() {
   else
     docker build -t conectavida/admin-api:"$TAG" -f admin-api/Dockerfile .
     docker build -t conectavida/mobile-api:"$TAG" -f mobile-api/Dockerfile .
+    docker build -t conectavida/admin-web:"$TAG" -f admin-web/Dockerfile admin-web
   fi
 
   passo "Registry local do cluster (para os workers baixarem as imagens)"
@@ -54,7 +55,7 @@ subir() {
   until wget -qO- "http://$REGISTRY/v2/" >/dev/null 2>&1 || curl -fs "http://$REGISTRY/v2/" >/dev/null 2>&1; do
     i=$((i+1)); [ $i -gt 30 ] && { echo "Registry não respondeu"; exit 1; }; sleep 2
   done
-  for img in admin-api mobile-api; do
+  for img in admin-api mobile-api admin-web; do
     docker tag conectavida/$img:"$TAG" $REGISTRY/conectavida/$img:"$TAG"
     docker push $REGISTRY/conectavida/$img:"$TAG"
   done
@@ -79,6 +80,13 @@ subir() {
       docker exec "$w" docker swarm join --token "$TOKEN" "$MANAGER_IP:2377"
     fi
   done
+  passo "Etiquetando os nós (aparece no Visualizer)"
+  docker node update --label-add papel=manager --label-add hospeda=infra "$(docker node ls -q -f role=manager | head -1)" >/dev/null
+  n=1
+  for w in $WORKERS; do
+    docker node update --label-add papel=worker --label-add zona=zona-$n "$w" >/dev/null
+    n=$((n+1))
+  done
   docker node ls
 
   passo "Tarefa 3.3: deploy da stack"
@@ -86,6 +94,7 @@ subir() {
 
   passo "Pronto!"
   echo "  Visualizer ......... http://localhost:8085"
+  echo "  Painel admin (web) . http://localhost:8088  (admin@conectavida.com / admin123)"
   echo "  admin-api .......... http://localhost:8080/actuator/health"
   echo "  mobile-api ......... http://localhost:8081/actuator/health"
   echo "  RabbitMQ (painel) .. http://localhost:15672  (conectavida / conectavida)"

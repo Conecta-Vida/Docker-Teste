@@ -41,7 +41,7 @@ O backend é **um único projeto Gradle com três módulos**:
 |--------|--------------|
 | `core` | Entidades JPA, repositórios, serviços, configuração do RabbitMQ e as rotas usadas pelos dois clientes (`/api/auth`, `/api/usuarios`, `/api/comunicacoes`, inscrições em campanhas) |
 | `admin-api` | Rotas exclusivas do painel: dashboard, alertas, campanhas, instituições, logs e relatórios |
-| `mobile-api` | Rotas exclusivas do app (`/api/push`) e o **consumidor da fila** do RabbitMQ que dispara as notificações push |
+| `mobile-api` | Rotas exclusivas do app (`/api/push`), o **consumidor da fila** do RabbitMQ que dispara as notificações push e um filtro que **bloqueia (403)** as operações de gestão herdadas do `core` (criar/excluir comunicações, listar todos os usuários, CSV) |
 
 Assim cada API escala de forma independente. No dia de uma campanha de vacinação, por exemplo, só a `mobile-api` precisa de mais réplicas.
 
@@ -201,7 +201,7 @@ x-api-env: &api-env
 - `image`: as imagens vêm do **registry local do cluster** (`127.0.0.1:5000`). Os workers não têm as imagens que você construiu na sua máquina, então elas precisam estar num registry que todos os nós alcancem.
 - `depends_on`: o Swarm **ignora** essa opção, que fica só como documentação. Quem resolve a ordem de subida é a `restart_policy`: se a API subir antes do banco, ela falha e o Swarm tenta de novo depois de 10 s.
 - `replicas`: quantidade inicial de réplicas (2 na admin-api, 3 na mobile-api).
-- `update_config`: *rolling update*, uma réplica por vez, subindo a nova antes de derrubar a antiga (`start-first`). Assim a atualização não tem downtime.
+- `update_config`: *rolling update*, uma réplica por vez, subindo a nova antes de derrubar a antiga (`start-first`). Assim a atualização não tem downtime. Cada réplica nova é observada por 30 s (`monitor`), e se falhar o Swarm **volta sozinho para a versão anterior** (`failure_action: rollback`). Para demonstrar: `TAG=1.1 docker stack deploy ...` com uma imagem nova.
 - `resources`: o `limit` impede uma réplica de consumir toda a RAM do nó. A `reservation` é a memória que o scheduler garante ao escolher o nó.
 
 ```yaml
@@ -372,6 +372,8 @@ Ambiente: 1 manager + 2 workers `docker:dind`.
 | Token registrado na `mobile-api` (worker-1) e visível para as réplicas de outros nós | ✅ |
 | ALERTA criado na `admin-api` → RabbitMQ → consumido por **uma** réplica da `mobile-api` | ✅ |
 | `docker service scale` 6/4/2 refletido no Visualizer | ✅ (ver vídeo) |
+| Rolling update 1.0 → 1.1 com réplicas nos 3 nós | ✅ |
+| mobile-api bloqueia rotas de gestão (403) e libera as do app (200) | ✅ (+ 20 testes em `./gradlew :mobile-api:test`) |
 
 ---
 
@@ -385,6 +387,10 @@ Ambiente: 1 manager + 2 workers `docker:dind`.
 | Mudou o `02-seed.sql` e nada aconteceu | Os scripts só rodam com o volume vazio. Rode `docker stack rm conectavida`, espere alguns segundos e depois `docker volume rm conectavida_postgres-data`. |
 | Push não chega ao celular | Defina `FCM_SERVER_KEY` antes do deploy. Sem ela, o log mostra "Server Key não configurada". |
 | Visualizer com `localhost:8085` fora do ar | A porta usa a *routing mesh* do Swarm, que precisa do módulo IPVS do kernel. Ele já vem no Docker Desktop e nas distros Linux comuns. |
+
+## Limitações conhecidas
+- O limite de 3 tentativas de login fica na memória de cada réplica: com várias réplicas da `admin-api`, cada uma conta separadamente.
+- O "token" de login é simbólico (não é um JWT assinado) e as rotas não exigem autenticação. Isso vem do projeto original e está fora do escopo desta atividade.
 
 ## Segurança
 - As senhas do compose são **de laboratório**. Em produção, use `.env` ou *Docker secrets*.

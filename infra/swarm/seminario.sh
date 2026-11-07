@@ -34,7 +34,10 @@ subir() {
     passo "Ativando o modo Swarm (manager em $MANAGER_IP)"
     docker swarm init --advertise-addr "$MANAGER_IP"
   else
-    echo "Swarm já está ativo neste host."
+    # Usa o endereço com que o manager já foi anunciado
+    MANAGER_IP=$(docker info -f '{{.Swarm.NodeAddr}}')
+    echo "Swarm já está ativo neste host (manager em $MANAGER_IP)."
+    echo "Se os workers não conseguirem entrar: docker swarm leave --force e rode o script de novo."
   fi
 
   passo "Tarefa 1: build das imagens (multi-stage, Alpine Linux)"

@@ -2,8 +2,8 @@ package br.edu.ifsp.conectaavida.controller;
 
 import br.edu.ifsp.conectaavida.domain.DispositivoPush;
 import br.edu.ifsp.conectaavida.repository.DispositivoPushRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -29,7 +29,6 @@ public class PushTokenController {
      * POST /api/push/registrar-token
      */
     @PostMapping("/registrar-token")
-    @Transactional
     public ResponseEntity<?> registrarToken(@RequestBody Map<String, String> payload) {
         String token = payload.get("token");
         if (token == null || token.isBlank()) {
@@ -42,7 +41,11 @@ public class PushTokenController {
         dispositivo.setToken(token);
         dispositivo.setPlataforma(payload.getOrDefault("plataforma", "desconhecida"));
         dispositivo.setDataRegistro(LocalDateTime.now());
-        dispositivoPushRepository.save(dispositivo);
+        try {
+            dispositivoPushRepository.saveAndFlush(dispositivo);
+        } catch (DataIntegrityViolationException e) {
+            // Outra réplica registrou o mesmo token no mesmo instante: ele já está salvo
+        }
 
         return ResponseEntity.ok(Map.of(
                 "mensagem", "Token registrado com sucesso.",

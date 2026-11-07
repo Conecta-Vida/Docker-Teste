@@ -25,12 +25,12 @@ O script abre o Visualizer, o painel e o app, mostra **o que falar** (em amarelo
 | Passo | O que aparece | O que falar |
 |---|---|---|
 | 1 | `docker node ls` + Visualizer | "São 3 nós: o manager coordena e os 2 workers (containers Docker-in-Docker) executam os containers." |
-| 2 | Serviços por nó | "O banco e o registry ficam presos ao manager porque guardam dados. APIs e sites não guardam estado, então o Swarm espalha as cópias. Mesma cor = mesmo serviço." |
+| 2 | Serviços por nó + **Painel do Cluster (8090)** | "O banco e o registry ficam presos ao manager porque guardam dados. APIs e sites não guardam estado, então o Swarm espalha as cópias. Mesma cor = mesmo serviço. **Diferencial:** nosso Painel do Cluster mostra tudo ao vivo e escala pelos botões + e −." |
 | 3 | Painel (8088) e app (8089) | "Este é o sistema rodando dentro do cluster: o gestor publica e o cidadão recebe." |
 | 4 | `replicas: 6` e depois `2` | "**Infraestrutura como código**: as réplicas estão declaradas no docker-compose.yml. Mudamos o número, reaplicamos o arquivo e o Swarm cria ou remove as cópias." |
 | 5 | `docker service scale` | "Também dá para escalar na hora pelo terminal." |
 | 6 | `docker stop worker-2` | "Se uma máquina cai, o Swarm recria as réplicas dela nos outros nós e o sistema continua no ar." |
-| 7 | Resumo | "6 serviços, 3 nós, rede overlay, imagens multi-stage em Alpine, escalabilidade e recuperação automática." |
+| 7 | Resumo | "7 serviços (com o nosso Painel do Cluster), 3 nós, rede overlay, imagens multi-stage em Alpine, escalabilidade e recuperação automática." |
 
 ## Comandos avulsos (se quiser fazer na mão)
 
@@ -47,6 +47,7 @@ O script abre o Visualizer, o painel e o app, mostra **o que falar** (em amarelo
 | O quê | Endereço | Login |
 |---|---|---|
 | Visualizer | http://localhost:8085 | (sem login) |
+| Painel do Cluster (diferencial) | http://localhost:8090 | (sem login) |
 | Painel admin | http://localhost:8088 | admin@conectavida.com / admin123 |
 | App do cidadão | http://localhost:8089 | cidadao@conectavida.com / cidadao123 |
 

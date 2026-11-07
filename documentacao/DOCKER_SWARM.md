@@ -17,6 +17,7 @@ Guia da atividade de **conteinerização e orquestração**: as imagens, a stack
  Navegador ─8089─▶ mobile-web (Nginx) ─/api──▶ mobile-api (8081) ─┘    (5432)    │
  App Flutter (celular/emulador) ─────8081────▶ mobile-api                        │
  Navegador ─8085─▶ visualizer (lê o docker.sock do manager)                      │
+ Navegador ─8090─▶ painel-cluster (API do Docker: lê o cluster e escala)         │
                  └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -28,6 +29,7 @@ Guia da atividade de **conteinerização e orquestração**: as imagens, a stack
 | 4 | `visualizer` | `dockersamples/visualizer:stable` | 8085 | 1 | manager |
 | 5 | `admin-web` | `conectavida/admin-web` (painel admin V2, React) | 8088 | 2 | qualquer nó |
 | 6 | `mobile-web` | `conectavida/mobile-web` (app Flutter no navegador) | 8089 | 2 | qualquer nó |
+| 7 | `painel-cluster` | `conectavida/painel-cluster` (**diferencial:** visualizador próprio) | 8090 | 1 | manager |
 
 O banco roda **localmente, dentro do cluster** (serviço `postgres`); o Supabase só é usado se vocês importarem os dados dele (seção 5).
 O backend é o **conecta-vida-backend** (Spring Boot 3.2, Java 21, Swagger). RabbitMQ e Redis foram descartados do projeto.
@@ -142,7 +144,29 @@ O arquivo [`admin-web/nginx/default.conf`](../admin-web/nginx/default.conf) faz 
 2. **`try_files ... /index.html`**: garante que rotas do React como `/alertas` funcionem ao recarregar a página.
 3. **`/assets/` com cache de 1 ano**: os arquivos têm hash no nome, então podem ser cacheados.
 
-### 2.4 Imagens prontas
+### 2.4 `painel-cluster/Dockerfile` (diferencial: Painel do Cluster Conecta Vida)
+
+```dockerfile
+FROM node:22-alpine
+WORKDIR /app
+COPY server.js ./
+COPY public ./public
+ENV PORT=8090 STACK=conectavida
+EXPOSE 8090
+HEALTHCHECK ... CMD wget -qO- http://127.0.0.1:8090/healthz || exit 1
+CMD ["node", "server.js"]
+```
+Imagem de **um estágio só**, porque não há nada para compilar: o `server.js` usa apenas o Node.js, sem dependências externas.
+
+Como o painel funciona (`painel-cluster/server.js`):
+1. Conversa com a **API do Docker** pelo socket `/var/run/docker.sock` (HTTP sobre socket Unix): `GET /nodes`, `GET /services` e `GET /tasks`.
+2. A cada 2 segundos compara o estado do cluster com o anterior e gera **eventos**: réplica criada, réplica removida, réplica rodando, nó caiu, nó voltou. Os eventos vão para o navegador por **Server-Sent Events** (`/api/eventos`).
+3. Os botões **+** e **−** chamam `POST /api/escalar/<serviço>`, que faz `POST /services/{id}/update` na API do Docker com o novo número de réplicas, o mesmo que `docker service scale`.
+4. Por segurança, só `admin-api`, `mobile-api`, `admin-web` e `mobile-web` podem ser escalados, entre 0 e 8 réplicas. O banco e os painéis são fixos.
+
+Diferenças em relação ao Visualizer oficial: tema do Conecta Vida, ícones por tipo de serviço (banco, API, site), contador de réplicas por serviço, número da réplica (`mobile-api #3`), CPU e memória de cada nó, feed de eventos e escala pela tela.
+
+### 2.5 Imagens prontas
 
 | Serviço | Por que esta imagem |
 |---------|---------------------|
@@ -212,6 +236,18 @@ x-api-env: &api-env
         constraints: [node.role == manager]
 ```
 O Visualizer lê o estado do cluster pelo **socket do Docker** (somente leitura). Só o manager conhece o cluster inteiro, por isso a constraint.
+
+```yaml
+  painel-cluster:
+    image: ${REGISTRY:-127.0.0.1:5000}/conectavida/painel-cluster:${TAG:-1.0}
+    ports: ["8090:8090"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+```
+O nosso painel usa o mesmo socket, mas com **leitura e escrita**, porque os botões + e − alteram as réplicas. Por isso ele também fica preso ao manager, e por isso não deve ser exposto fora da rede do laboratório.
 
 ```yaml
 networks:

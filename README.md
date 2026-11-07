@@ -24,6 +24,7 @@ Gabriel Dias Ribeiro · Gustavo Barros Tenório · Luiz Henrique Gonçalves · R
 ├── mobile-api/    # API do aplicativo do cidadão  -> porta 8081  (+ Dockerfile)
 ├── admin-web/     # painel administrativo V2 (React + Vite), servido por Nginx (+ Dockerfile)
 ├── mobile-app/    # aplicativo Flutter do cidadão (+ Dockerfile: versão Web na porta 8089)
+├── painel-cluster/ # Painel do Cluster Conecta Vida: visualizador próprio do Swarm (porta 8090)
 ├── infra/
 │   ├── postgres/init/   # schema e dados de demonstração do banco
 │   └── swarm/seminario.sh  # roteiro automatizado do seminário (Swarm + DinD)
@@ -39,7 +40,7 @@ Gabriel Dias Ribeiro · Gustavo Barros Tenório · Luiz Henrique Gonçalves · R
 ./infra/swarm/seminario.sh subir
 ```
 
-Depois abra o **Visualizer** em http://localhost:8085, o **painel admin** em http://localhost:8088 (`admin@conectavida.com` / `admin123`) e o **app do cidadão** em http://localhost:8089 (`cidadao@conectavida.com` / `cidadao123`).
+Depois abra o **Visualizer** em http://localhost:8085, o **Painel do Cluster Conecta Vida** (nosso visualizador próprio, com eventos ao vivo e botões para escalar) em http://localhost:8090, o **painel admin** em http://localhost:8088 (`admin@conectavida.com` / `admin123`) e o **app do cidadão** em http://localhost:8089 (`cidadao@conectavida.com` / `cidadao123`).
 
 🎤 **Para apresentar**, rode o roteiro guiado (Enter avança; mostra o que falar e executa cada demonstração). Cola de 1 página: [documentacao/ROTEIRO_APRESENTACAO.md](documentacao/ROTEIRO_APRESENTACAO.md)
 

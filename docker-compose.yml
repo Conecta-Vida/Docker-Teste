@@ -2,10 +2,11 @@
 # Stack Docker Swarm - Conecta Vida (conecta-vida-backend + admin V2 + app)
 #   docker stack deploy -c docker-compose.yml conectavida
 #
-# 6 serviços na rede overlay "conectavida-net":
+# 7 serviços na rede overlay "conectavida-net":
 #   1 postgres (5432)     2 admin-api (8080)     3 mobile-api (8081)
 #   4 visualizer (8085)   5 admin-web (8088, painel React)
 #   6 mobile-web (8089, app Flutter no navegador)
+#   7 painel-cluster (8090, visualizador próprio do Conecta Vida - diferencial)
 #
 # As imagens nossas são lidas do registry local do cluster
 # (REGISTRY=127.0.0.1:5000), para que os workers também consigam baixá-las.
@@ -172,6 +173,28 @@ services:
       resources:
         limits:
           memory: 64M
+
+  # 7. Diferencial: Painel do Cluster Conecta Vida (visualizador próprio) --
+  #    Mostra nós, réplicas e eventos ao vivo e permite escalar pela tela.
+  painel-cluster:
+    image: ${REGISTRY:-127.0.0.1:5000}/conectavida/painel-cluster:${TAG:-1.0}
+    environment:
+      STACK: conectavida
+    ports:
+      - "8090:8090"
+    volumes:
+      # Leitura e escrita: o painel também altera as réplicas (botões + e −)
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - conectavida-net
+    deploy:
+      labels:
+        conectavida.camada: "monitoramento"
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]   # só o manager conhece o cluster todo
+      restart_policy:
+        condition: on-failure
 
 networks:
   conectavida-net:

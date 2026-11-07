@@ -13,11 +13,12 @@ Todas as fotos e vídeos deste manual foram feitos com o projeto rodando de verd
 
 | Requisito | Como atendemos | Onde mostrar |
 |---|---|---|
-| **1. Dockerfiles (imagens) dos serviços** | 4 imagens multi-stage em Alpine Linux: `admin-api`, `mobile-api` (Java 21), `admin-web` (React + Nginx) e `mobile-web` (Flutter Web + Nginx) | Arquivos `admin-api/Dockerfile`, `mobile-api/Dockerfile`, `admin-web/Dockerfile` e `mobile-app/Dockerfile` |
+| **1. Dockerfiles (imagens) dos serviços** | 5 imagens em Alpine Linux: `admin-api`, `mobile-api` (Java 21, multi-stage), `admin-web` (React + Nginx), `mobile-web` (Flutter Web + Nginx) e `painel-cluster` (Node.js) | `admin-api/Dockerfile`, `mobile-api/Dockerfile`, `admin-web/Dockerfile`, `mobile-app/Dockerfile` e `painel-cluster/Dockerfile` |
 | **2. Docker Swarm com docker-in-docker** | Cluster de **3 nós**: o PC é o manager e `worker-1` e `worker-2` são containers `docker:dind` | Visualizer e `docker node ls` |
-| **3. Docker Compose (infraestrutura como código), variação de réplicas e Visualizer** | `docker-compose.yml` descreve os 6 serviços, a rede, o volume e as réplicas. As réplicas mudam pelo arquivo (`replicas`) e pelo terminal (`docker service scale`) | `docker-compose.yml` e o Visualizer em http://localhost:8085 |
+| **3. Docker Compose (infraestrutura como código), variação de réplicas e Visualizer** | `docker-compose.yml` descreve os 7 serviços, a rede, o volume e as réplicas. As réplicas mudam pelo arquivo (`replicas`) e pelo terminal (`docker service scale`) | `docker-compose.yml` e o Visualizer em http://localhost:8085 |
+| **Diferencial no Visualizer** | **Painel do Cluster Conecta Vida**: um visualizador próprio, feito por nós, com o tema do projeto, eventos ao vivo e botões **+ / −** para escalar pela tela | http://localhost:8090 |
 
-**Os 6 serviços da stack:**
+**Os 7 serviços da stack:**
 
 | Serviço | O que é | Porta | Réplicas | Onde roda |
 |---|---|---|---|---|
@@ -27,6 +28,7 @@ Todas as fotos e vídeos deste manual foram feitos com o projeto rodando de verd
 | `visualizer` | Painel gráfico do cluster | 8085 | 1 | Manager (fixo) |
 | `admin-web` | Site do painel admin | 8088 | 2 | Qualquer nó |
 | `mobile-web` | App do cidadão no navegador | 8089 | 2 | Qualquer nó |
+| `painel-cluster` | **Diferencial:** Painel do Cluster Conecta Vida | 8090 | 1 | Manager (fixo) |
 
 ---
 
@@ -115,6 +117,7 @@ Está pronto quando:
 | O quê | Endereço | Login |
 |---|---|---|
 | Visualizer | http://localhost:8085 | (sem login) |
+| **Painel do Cluster** (diferencial) | http://localhost:8090 | (sem login) |
 | Painel admin | http://localhost:8088 | `admin@conectavida.com` / `admin123` |
 | App do cidadão | http://localhost:8089 | `cidadao@conectavida.com` / `cidadao123` |
 | Documentação das APIs | http://localhost:8080/swagger-ui.html | (sem login) |
@@ -170,7 +173,7 @@ export CONECTA_API_SALT='valor-do-salt-antigo'
 
 ---
 
-## Parte F: roteiro da apresentação (cerca de 12 minutos)
+## Parte F: roteiro da apresentação (cerca de 14 minutos)
 
 ### F1. Abertura (1 min)
 > "O Conecta Vida centraliza informações de saúde pública: o gestor publica campanhas e informativos pelo painel web e o cidadão recebe pelo aplicativo. Hoje vamos mostrar como colocamos o sistema inteiro em containers e orquestramos com o Docker Swarm."
@@ -209,6 +212,23 @@ O script mostra **em amarelo o que falar**, executa cada demonstração e espera
 
 ![Constraint do postgres no manager](midia/07-compose-postgres.png)
 
+### F4b. Nosso diferencial: Painel do Cluster Conecta Vida (2 min)
+O script abre http://localhost:8090 no passo 2. Mostre lado a lado com o Visualizer oficial.
+
+> "Além do Docker Visualizer, criamos o **nosso próprio visualizador**, o Painel do Cluster Conecta Vida. Ele roda como mais um serviço da stack, com Dockerfile próprio, e conversa com a **API do Docker** pelo socket do manager. Mostra os 3 nós, as réplicas de cada serviço com ícones e cores, um **feed de eventos ao vivo** e tem **botões + e −** que escalam o serviço direto pela tela."
+
+Demonstração:
+1. Clique em **+** na `mobile-api` duas ou três vezes. As réplicas novas aparecem como `starting` e depois `rodando`, e o feed registra *"Réplica de mobile-api criada em worker-1"*.
+2. Mostre que o **Visualizer oficial** (8085) também mudou: o painel altera o Swarm de verdade.
+3. Tente o **+** no `postgres`: não há botão, ele é **fixo** (banco não é escalado).
+4. Clique em **−** para voltar.
+
+![Painel do Cluster Conecta Vida](midia/17-painel-do-cluster.png)
+
+🎬 **Vídeo:** [Painel do Cluster: escala pelos botões e queda do worker-2 registrada no feed (115 s)](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-6-painel-do-cluster.mp4)
+
+> Os botões fazem o mesmo que `docker service scale`. No próximo `docker stack deploy` vale de novo o número do `docker-compose.yml`.
+
 ### F5. O sistema funcionando (passo 3, 2 min)
 - No **painel**, mostre o dashboard e, em **Campanhas**, crie uma campanha nova (ex.: "Vacinação contra a gripe").
 - No **app**, atualize a página e mostre a campanha aparecendo para o cidadão, que pode se inscrever.
@@ -220,7 +240,7 @@ O script mostra **em amarelo o que falar**, executa cada demonstração e espera
 
 ### F6. Requisito 3: Compose e variação de réplicas (passos 4 e 5, 3 min)
 Antes do passo 4, mostre no VS Code o `docker-compose.yml`:
-> "Isto é **infraestrutura como código**: os 6 serviços, a rede overlay, o volume do banco, os limites de memória e o número de réplicas estão descritos neste arquivo. Vejam a linha `replicas: ${MOBILE_API_REPLICAS:-3}`: o padrão são 3 cópias."
+> "Isto é **infraestrutura como código**: os 7 serviços, a rede overlay, o volume do banco, os limites de memória e o número de réplicas estão descritos neste arquivo. Vejam a linha `replicas: ${MOBILE_API_REPLICAS:-3}`: o padrão são 3 cópias."
 
 - **Passo 4:** o script reaplica o arquivo com 6 réplicas.
   > "Olhem o Visualizer: as caixas da mobile-api passaram de 3 para 6, distribuídas entre os nós."
@@ -242,7 +262,7 @@ O script desliga o `worker-2`. Em cerca de 30 segundos ele fica vermelho no Visu
 🎬 **Vídeo:** [worker-2 cai, as réplicas migram, e depois ele volta (75 s)](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-4-queda-de-maquina.mp4)
 
 ### F8. Fechamento (passo 7, 30 s)
-> "Atendemos os três requisitos: **Dockerfiles multi-stage** para 4 serviços, **cluster Swarm com 3 nós em Docker-in-Docker**, e **Docker Compose como infraestrutura como código**, variando réplicas e acompanhando tudo pelo **Docker Visualizer**. Obrigado!"
+> "Atendemos os três requisitos: **Dockerfiles** para 5 serviços, **cluster Swarm com 3 nós em Docker-in-Docker**, e **Docker Compose como infraestrutura como código**, variando réplicas e acompanhando tudo pelo **Docker Visualizer** e pelo nosso **Painel do Cluster**, o diferencial do grupo. Obrigado!"
 
 ---
 
@@ -251,7 +271,7 @@ O script desliga o `worker-2`. Em cerca de 30 segundos ele fica vermelho no Visu
 | Quem | Partes | Tempo | Fica no controle de |
 |---|---|---|---|
 | **Pessoa 1** | Abertura e **Requisito 1: Dockerfiles** (F1 e F2) | ~4 min | VS Code (mostra `admin-api/Dockerfile` e `admin-web/Dockerfile`) |
-| **Pessoa 2** | **Requisito 2: Swarm** e sistema funcionando (F3, F4 e F5) | ~4 min | Git Bash (`apresentar`, passos 1 a 3) e navegador (painel e app) |
+| **Pessoa 2** | **Requisito 2: Swarm**, **diferencial (Painel do Cluster)** e sistema funcionando (F3, F4, F4b e F5) | ~5 min | Git Bash (`apresentar`, passos 1 a 3) e navegador (Painel do Cluster, painel admin e app) |
 | **Pessoa 3** | **Requisito 3: Compose e réplicas**, queda de máquina e fechamento (F6, F7 e F8) | ~4 min | VS Code (`docker-compose.yml`) e Git Bash (passos 4 a 7) |
 
 **Dicas:**
@@ -324,6 +344,7 @@ Gravados com o projeto rodando num cluster de 3 nós (manager + 2 workers Docker
 | [video-3-escala-pelo-terminal.mp4](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-3-escala-pelo-terminal.mp4) | admin-api 2 → 4 → 2 com `docker service scale` | Requisito 3 |
 | [video-4-queda-de-maquina.mp4](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-4-queda-de-maquina.mp4) | worker-2 cai e as réplicas migram para os outros nós | Extra |
 | [video-5-sistema-funcionando.mp4](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-5-sistema-funcionando.mp4) | painel cria uma campanha e ela aparece no app | Sistema |
+| [video-6-painel-do-cluster.mp4](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-6-painel-do-cluster.mp4) | **Diferencial:** Painel do Cluster escalando pelos botões e registrando a queda do worker-2 | Diferencial |
 
 > No GitHub, clique no vídeo e depois em **View raw** (ou no botão de download) para baixar o `.mp4` e colocar nos slides.
 
@@ -347,4 +368,5 @@ Gravados com o projeto rodando num cluster de 3 nós (manager + 2 workers Docker
 | [14-app-login.png](midia/14-app-login.png) | Login do app |
 | [15-app-inicio.png](midia/15-app-inicio.png) | App mostrando o alerta ao cidadão |
 | [16-sistema-funcionando.png](midia/16-sistema-funcionando.png) | Campanha criada no painel aparecendo no app |
+| [17-painel-do-cluster.png](midia/17-painel-do-cluster.png) | **Diferencial:** Painel do Cluster Conecta Vida |
 

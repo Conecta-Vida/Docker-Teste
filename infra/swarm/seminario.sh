@@ -58,7 +58,7 @@ subir() {
     echo "Se os workers não conseguirem entrar: docker swarm leave --force e rode o script de novo."
   fi
 
-  passo "Tarefa 1: build das 4 imagens (admin-api, mobile-api, admin-web, mobile-web)"
+  passo "Tarefa 1: build das 5 imagens (admin-api, mobile-api, admin-web, mobile-web, painel-cluster)"
   if [ "${PULAR_BUILD:-0}" = "1" ]; then
     echo "PULAR_BUILD=1: usando as imagens já construídas."
   else
@@ -67,6 +67,7 @@ subir() {
     docker build -t conectavida/admin-web:"$TAG" -f admin-web/Dockerfile admin-web
     # O app Flutter demora mais na primeira vez (baixa o SDK do Flutter, ~1,5 GB)
     docker build -t conectavida/mobile-web:"$TAG" -f mobile-app/Dockerfile mobile-app
+    docker build -t conectavida/painel-cluster:"$TAG" -f painel-cluster/Dockerfile painel-cluster
   fi
 
   passo "Registry local do cluster (para os workers baixarem as imagens)"
@@ -78,7 +79,7 @@ subir() {
   until wget -qO- "http://$REGISTRY/v2/" >/dev/null 2>&1 || curl -fs "http://$REGISTRY/v2/" >/dev/null 2>&1; do
     i=$((i+1)); [ $i -gt 30 ] && { echo "Registry não respondeu"; exit 1; }; sleep 2
   done
-  for img in admin-api mobile-api admin-web mobile-web; do
+  for img in admin-api mobile-api admin-web mobile-web painel-cluster; do
     docker tag conectavida/$img:"$TAG" $REGISTRY/conectavida/$img:"$TAG"
     docker push $REGISTRY/conectavida/$img:"$TAG"
   done
@@ -118,6 +119,7 @@ subir() {
 
   passo "Pronto!"
   echo "  Visualizer ......... http://localhost:8085"
+  echo "  Painel do Cluster .. http://localhost:8090  (diferencial: eventos ao vivo e botões + / -)"
   echo "  Painel admin (web) . http://localhost:8088  (admin@conectavida.com / admin123)"
   echo "  App do cidadão ..... http://localhost:8089  (cidadao@conectavida.com / cidadao123)"
   echo "  admin-api .......... http://localhost:8080/actuator/health"
@@ -183,11 +185,14 @@ apresentar() {
   abrir http://localhost:8085
   pausa
 
-  passo "2/7 - O que roda em cada nó (Visualizer)"
+  passo "2/7 - O que roda em cada nó (Visualizer + Painel do Cluster)"
   fala "Manager: postgres (banco), visualizer e registry - o banco guarda DADOS e fica preso"
   fala "ao manager por 'constraint: node.role == manager'."
   fala "Workers: APIs e sites, sem estado - o Swarm espalha as cópias entre os nós."
   fala "Mesma cor no Visualizer = réplicas do mesmo serviço."
+  fala "Nosso diferencial: o Painel do Cluster, um visualizador próprio do Conecta Vida,"
+  fala "com eventos ao vivo e botões para escalar direto pela tela."
+  abrir http://localhost:8090
   cmd docker stack services $STACK
   pausa
 
@@ -223,7 +228,7 @@ apresentar() {
   pausa
 
   passo "7/7 - Fim"
-  fala "Resumo: 6 serviços, 3 nós, rede overlay, réplicas declaradas no docker-compose.yml,"
+  fala "Resumo: 7 serviços (com o nosso Painel do Cluster), 3 nós, rede overlay, réplicas declaradas no docker-compose.yml,"
   fala "imagens multi-stage em Alpine, escalabilidade e recuperação automática."
   rm -f "$REPLICAS_ENV"
   deploy >/dev/null

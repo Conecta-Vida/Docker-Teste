@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do Cluster · Conecta Vida</title>
+<style>
+  :root {
+    --azul: #2563eb; --azul-escuro: #1e40af; --fundo: #f1f5fb; --card: #ffffff; --texto: #0f172a;
+    --suave: #64748b; --borda: #e2e8f0; --verde: #16a34a; --amarelo: #d97706; --vermelho: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fundo); color: var(--texto); font: 15px/1.4 "Segoe UI", system-ui, sans-serif; }
+  header { background: linear-gradient(120deg, var(--azul-escuro), var(--azul)); color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .logo { width: 42px; height: 42px; background: #fff2; border-radius: 12px; display: grid; place-items: center; }
+  h1 { font-size: 22px; margin: 0; } h1 small { display: block; font-size: 13px; font-weight: 400; opacity: .85; }
+  .kpis { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+  .kpi { background: #ffffff1f; border-radius: 12px; padding: 6px 14px; text-align: center; min-width: 96px; }
+  .kpi b { display: block; font-size: 24px; line-height: 1.1; } .kpi span { font-size: 12px; opacity: .9; }
+  .vivo { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+  .vivo i { width: 9px; height: 9px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 #4ade80aa; animation: pulso 1.6s infinite; }
+  @keyframes pulso { 70% { box-shadow: 0 0 0 9px #4ade8000; } 100% { box-shadow: 0 0 0 0 #4ade8000; } }
+
+  main { display: grid; grid-template-columns: 1fr 340px; gap: 16px; padding: 16px; align-items: start; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  .nos { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .no { background: var(--card); border: 1px solid var(--borda); border-radius: 16px; box-shadow: 0 2px 10px #0f172a0d; overflow: hidden; transition: opacity .3s; }
+  .no.down { opacity: .55; border-color: var(--vermelho); }
+  .no-topo { padding: 12px 14px; border-bottom: 1px solid var(--borda); }
+  .no-nome { display: flex; align-items: center; gap: 8px; font-size: 19px; font-weight: 700; }
+  .status { width: 11px; height: 11px; border-radius: 50%; background: var(--verde); }
+  .down .status { background: var(--vermelho); }
+  .papel { margin-left: auto; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: #dbeafe; color: var(--azul-escuro); }
+  .papel.worker { background: #dcfce7; color: #166534; }
+  .meta { color: var(--suave); font-size: 12.5px; margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { background: #f1f5f9; border-radius: 6px; padding: 1px 7px; }
+  .tarefas { padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+  .vazio { color: var(--suave); text-align: center; padding: 28px 0; font-size: 13px; }
+  .tarefa { display: flex; align-items: center; gap: 10px; border-radius: 11px; padding: 8px 10px; border-left: 5px solid var(--cor); background: color-mix(in srgb, var(--cor) 9%, #fff); }
+  .tarefa.nova { animation: entra .7s ease-out; }
+  @keyframes entra { from { transform: scale(.85); opacity: 0; background: #fef9c3; } to { transform: none; opacity: 1; } }
+  .ico { width: 34px; height: 34px; border-radius: 9px; background: var(--cor); color: #fff; display: grid; place-items: center; flex: none; }
+  .tarefa b { font-size: 15px; display: block; } .tarefa small { color: var(--suave); font-size: 12px; }
+  .estado { margin-left: auto; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: #dcfce7; color: #166534; }
+  .estado.sub { background: #fef3c7; color: #92400e; }
+
+  aside { display: flex; flex-direction: column; gap: 16px; }
+  .painel { background: var(--card); border: 1px solid var(--borda); border-radius: 16px; box-shadow: 0 2px 10px #0f172a0d; }
+  .painel h2 { font-size: 15px; margin: 0; padding: 12px 14px; border-bottom: 1px solid var(--borda); display: flex; align-items: center; gap: 8px; }
+  .servico { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid #f1f5f9; }
+  .servico:last-child { border-bottom: 0; }
+  .servico .ico { width: 28px; height: 28px; border-radius: 8px; }
+  .servico .nome { font-weight: 600; flex: 1; min-width: 0; }
+  .barra { height: 5px; background: #e2e8f0; border-radius: 9px; margin-top: 4px; overflow: hidden; }
+  .barra i { display: block; height: 100%; background: var(--cor); transition: width .5s; }
+  .cont { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 44px; text-align: center; }
+  .btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--borda); background: #fff; font-size: 18px; font-weight: 700; cursor: pointer; color: var(--azul); }
+  .btn:hover { background: #eff6ff; } .btn:disabled { opacity: .35; cursor: default; }
+  .fixo { font-size: 11px; color: var(--suave); }
+  .feed { max-height: 420px; overflow: auto; padding: 6px 0; }
+  .ev { display: flex; gap: 8px; padding: 6px 14px; font-size: 13.5px; animation: entra .5s; }
+  .ev time { color: var(--suave); font-variant-numeric: tabular-nums; flex: none; }
+  .ev.nova b, .ev.ok b { color: var(--verde); } .ev.removida b { color: var(--amarelo); }
+  .ev.alerta b { color: var(--vermelho); } .ev.escala b { color: var(--azul); } .ev.info b { color: var(--suave); }
+  footer { text-align: center; color: var(--suave); font-size: 12px; padding: 0 0 16px; }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity .3s; }
+  .toast.on { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/><path d="M3.5 12h4l2-3 3 6 2-3h6"/></svg></div>
+  <h1>Painel do Cluster · Conecta Vida<small>Docker Swarm em tempo real · IFSP Bragança Paulista</small></h1>
+  <div class="kpis">
+    <div class="kpi"><b id="k-nos">–</b><span>nós ativos</span></div>
+    <div class="kpi"><b id="k-rep">–</b><span>réplicas rodando</span></div>
+    <div class="kpi"><b id="k-svc">–</b><span>serviços</span></div>
+    <div class="kpi"><span class="vivo"><i></i> ao vivo</span><span id="k-hora" style="display:block;margin-top:3px">–</span></div>
+  </div>
+</header>
+
+<main>
+  <section class="nos" id="nos"></section>
+  <aside>
+    <div class="painel"><h2>⚙️ Serviços e réplicas</h2><div id="servicos"></div></div>
+    <div class="painel"><h2>📡 Eventos ao vivo</h2><div class="feed" id="feed"></div></div>
+  </aside>
+</main>
+<footer>Mesma cor = réplicas do mesmo serviço · Os botões <b>+</b> e <b>−</b> alteram as réplicas no Swarm (como <code>docker service scale</code>)</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+  const ICONES = {
+    banco: '<path d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3z"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+    api: '<path d="M8 9l-4 3 4 3"/><path d="M16 9l4 3-4 3"/><path d="M13.5 6l-3 12"/>',
+    web: '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 8h18"/><path d="M8 21h8"/>',
+    monitor: '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
+    registry: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/>',
+    outro: '<circle cx="12" cy="12" r="8"/>',
+  };
+  const svg = (t) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONES[t] || ICONES.outro}</svg>`;
+  const CORES = { postgres: '#ca8a04', 'admin-api': '#7c3aed', 'mobile-api': '#e11d48', 'admin-web': '#0891b2', 'mobile-web': '#16a34a', visualizer: '#475569', painel: '#2563eb', registry: '#9a3412' };
+  const cor = (s) => CORES[s] || '#' + ((Array.from(s).reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) & 0x7f7f7f) + 0x404040).toString(16);
+  const conhecidas = new Set();
+  let primeira = true;
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2600); }
+
+  function render(e) {
+    const ativos = e.nos.filter((n) => n.status === 'ready').length;
+    const rep = e.nos.reduce((s, n) => s + n.tarefas.filter((t) => t.estado === 'running').length, 0);
+    $('k-nos').textContent = `${ativos}/${e.nos.length}`;
+    $('k-rep').textContent = rep;
+    $('k-svc').textContent = e.servicos.length;
+    $('k-hora').textContent = new Date(e.atualizadoEm).toLocaleTimeString('pt-BR');
+
+    $('nos').innerHTML = e.nos.map((n) => {
+      const labels = Object.entries(n.labels).map(([k, v]) => `<span class="chip">${esc(k)}=${esc(v)}</span>`).join('');
+      const tarefas = n.tarefas.map((t) => {
+        const nova = !primeira && !conhecidas.has(t.id);
+        return `<div class="tarefa${nova ? ' nova' : ''}" style="--cor:${cor(t.servico)}">
+          <div class="ico">${svg(t.tipo)}</div>
+          <div><b>${esc(t.servico)}${t.slot ? ' #' + t.slot : ''}</b><small>${esc(t.imagem)}</small></div>
+          <span class="estado${t.estado === 'running' ? '' : ' sub'}">${t.estado === 'running' ? 'rodando' : esc(t.estado)}</span></div>`;
+      }).join('') || '<div class="vazio">Nenhuma réplica neste nó</div>';
+      return `<article class="no${n.status !== 'ready' ? ' down' : ''}">
+        <div class="no-topo">
+          <div class="no-nome"><span class="status"></span>${esc(n.nome)}<span class="papel ${n.papel}">${n.papel === 'manager' ? '👑 manager' : 'worker'}</span></div>
+          <div class="meta"><span class="chip">${n.cpus} CPUs</span><span class="chip">${n.memoriaGB} GB</span><span class="chip">${n.tarefas.length} containers</span>${labels}</div>
+        </div><div class="tarefas">${tarefas}</div></article>`;
+    }).join('');
+    e.nos.forEach((n) => n.tarefas.forEach((t) => conhecidas.add(t.id)));
+    primeira = false;
+
+    $('servicos').innerHTML = e.servicos.map((s) => `
+      <div class="servico" style="--cor:${cor(s.nome)}">
+        <div class="ico">${svg(s.tipo)}</div>
+        <div class="nome">${esc(s.nome)}<div class="barra"><i style="width:${s.desejadas ? Math.min(100, (s.rodando / s.desejadas) * 100) : 0}%"></i></div></div>
+        ${s.escalavel ? `<button class="btn" data-s="${esc(s.nome)}" data-n="${s.desejadas - 1}" ${s.desejadas <= 1 ? 'disabled' : ''} title="Remover réplica">−</button>` : ''}
+        <span class="cont">${s.rodando}/${s.desejadas}</span>
+        ${s.escalavel ? `<button class="btn" data-s="${esc(s.nome)}" data-n="${s.desejadas + 1}" ${s.desejadas >= e.maxReplicas ? 'disabled' : ''} title="Adicionar réplica">+</button>` : '<span class="fixo">fixo</span>'}
+      </div>`).join('');
+  }
+
+  async function atualizar() {
+    try { render(await (await fetch('api/estado', { cache: 'no-store' })).json()); }
+    catch { $('k-hora').textContent = 'sem conexão'; }
+  }
+
+  $('servicos').addEventListener('click', async (ev) => {
+    const b = ev.target.closest('button[data-s]');
+    if (!b) return;
+    b.disabled = true;
+    const r = await fetch('api/escalar/' + b.dataset.s, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ replicas: Number(b.dataset.n) }) });
+    const d = await r.json();
+    toast(r.ok ? `${d.servico}: ${d.antes} → ${d.depois} réplicas` : d.erro);
+    atualizar();
+  });
+
+  const fonte = new EventSource('api/eventos');
+  fonte.onmessage = (m) => {
+    const ev = JSON.parse(m.data);
+    const div = document.createElement('div');
+    div.className = 'ev ' + ev.tipo;
+    div.innerHTML = `<time>${new Date(ev.hora).toLocaleTimeString('pt-BR')}</time><b>●</b><span>${esc(ev.texto)}</span>`;
+    $('feed').prepend(div);
+    while ($('feed').children.length > 40) $('feed').lastChild.remove();
+  };
+
+  atualizar();
+  setInterval(atualizar, 2000);
+</script>
+</body>
+</html>

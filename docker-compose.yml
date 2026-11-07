@@ -115,7 +115,7 @@ services:
     deploy:
       labels:
         conectavida.camada: "backend-admin"
-      replicas: 2
+      replicas: ${ADMIN_API_REPLICAS:-2}   # número de cópias (variável ADMIN_API_REPLICAS)
       update_config: *rolling-update
       restart_policy:
         condition: on-failure
@@ -144,7 +144,7 @@ services:
     deploy:
       labels:
         conectavida.camada: "backend-mobile"
-      replicas: 3
+      replicas: ${MOBILE_API_REPLICAS:-3}   # número de cópias (variável MOBILE_API_REPLICAS)
       update_config: *rolling-update
       restart_policy:
         condition: on-failure
@@ -200,7 +200,7 @@ services:
     deploy:
       labels:
         conectavida.camada: "frontend-admin"
-      replicas: 2
+      replicas: ${ADMIN_WEB_REPLICAS:-2}   # número de cópias (variável ADMIN_WEB_REPLICAS)
       update_config: *rolling-update
       restart_policy:
         condition: on-failure
@@ -220,7 +220,7 @@ services:
     deploy:
       labels:
         conectavida.camada: "frontend-app"
-      replicas: 2
+      replicas: ${MOBILE_WEB_REPLICAS:-2}   # número de cópias (variável MOBILE_WEB_REPLICAS)
       update_config: *rolling-update
       restart_policy:
         condition: on-failure

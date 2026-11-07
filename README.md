@@ -42,7 +42,13 @@ Gabriel Dias Ribeiro · Gustavo Barros Tenório · Luiz Henrique Gonçalves · R
 
 Depois abra o **Visualizer** em http://localhost:8085, o **painel admin** em http://localhost:8088 (`admin@conectavida.com` / `admin123`) e o **app do cidadão** em http://localhost:8089 (`cidadao@conectavida.com` / `cidadao123`).
 
-Para demonstrar a escalabilidade:
+🎤 **Para apresentar**, rode o roteiro guiado (Enter avança; mostra o que falar e executa cada demonstração). Cola de 1 página: [documentacao/ROTEIRO_APRESENTACAO.md](documentacao/ROTEIRO_APRESENTACAO.md)
+
+```bash
+./infra/swarm/seminario.sh apresentar
+```
+
+Só a demonstração de escalabilidade:
 
 ```bash
 ./infra/swarm/seminario.sh escalar

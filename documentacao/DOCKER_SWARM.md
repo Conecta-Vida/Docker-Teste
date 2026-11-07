@@ -26,10 +26,15 @@ Guia da atividade de **conteinerização e orquestração**: as imagens, a stack
 |---|---------|--------|-------|----------|-----------|
 | 1 | `postgres` | `postgres:17-alpine` | 5432 | 1 | manager |
 | 2 | `rabbitmq` | `rabbitmq:4-management-alpine` | 5672 / 15672 | 1 | manager |
-| 3 | `admin-api` | `conectavida/admin-api:1.0` (nossa) | 8080 | 2 | qualquer nó |
-| 4 | `mobile-api` | `conectavida/mobile-api:1.0` (nossa) | 8081 | 3 | qualquer nó |
+| 3 | `admin-api` | `conectavida/admin-api` (nossa, Java 21) | 8080 | 2 | qualquer nó |
+| 4 | `mobile-api` | `conectavida/mobile-api` (nossa, Java 21) | 8081 | 3 | qualquer nó |
 | 5 | `visualizer` | `dockersamples/visualizer:stable` | 8085 | 1 | manager |
-| 6 | `admin-web` | `conectavida/admin-web:1.0` (nossa, front) | 8088 | 2 | qualquer nó |
+| 6 | `redis` | `redis:7-alpine` (cache do dashboard) | interna | 1 | qualquer nó |
+| 7 | `admin-web` | `conectavida/admin-web` (painel admin V2, React) | 8088 | 2 | qualquer nó |
+| 8 | `mobile-web` | `conectavida/mobile-web` (app Flutter no navegador) | 8089 | 2 | qualquer nó |
+
+Os serviços 1 a 5 são os pedidos pelo professor; 6 a 8 completam o sistema.
+O backend é o **conecta-vida-backend** (Spring Boot 3.2, Java 21, Swagger, Redis, RabbitMQ).
 
 Todas as imagens usam **Alpine Linux**.
 
@@ -111,7 +116,11 @@ ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
 
 > **Resultado do multi-stage:** a imagem final tem só o JRE e o JAR (sem JDK, Gradle ou cache de dependências) e roda Alpine Linux v3.24.
 
-### 2.2 `admin-web/Dockerfile` (front-end React)
+### 2.2 `mobile-app/Dockerfile` (app Flutter no navegador)
+
+Igual ao do painel, mas o estágio 1 usa a imagem `ghcr.io/cirruslabs/flutter:3.44.0` (o SDK do Flutter não roda em Alpine, precisa de glibc) e executa `flutter build web --dart-define=API_BASE_URL=/api`. O estágio 2 é o mesmo Nginx Alpine, encaminhando `/api` para a `mobile-api`. Assim o app pode ser aberto no PC ou no celular sem instalar o Flutter.
+
+### 2.3 `admin-web/Dockerfile` (front-end React)
 
 ```dockerfile
 FROM node:22-alpine AS build
@@ -143,7 +152,7 @@ O arquivo [`admin-web/nginx/default.conf`](../admin-web/nginx/default.conf) faz 
 2. **`try_files ... /index.html`**: garante que rotas do React como `/alertas` funcionem ao recarregar a página.
 3. **`/assets/` com cache de 1 ano**: os arquivos têm hash no nome, então podem ser cacheados.
 
-### 2.3 Imagens prontas
+### 2.4 Imagens prontas
 
 | Serviço | Por que esta imagem |
 |---------|---------------------|
@@ -359,7 +368,28 @@ Os valores padrão servem para o laboratório. Para trocar senhas, copie `.env.e
 
 ---
 
-## 5. Testes realizados
+## 5. Usar os dados reais do Supabase
+
+O Postgres da stack começa com dados de demonstração. Para trazer os dados do Supabase (só leitura, nada é alterado lá):
+
+1. Faça o deploy com o **mesmo salt** que o backend usava com o Supabase, senão os logins antigos não funcionam. O valor é o `app.security.salt` dos `application.properties` antigos.
+2. Com a stack rodando, no Git Bash:
+
+```bash
+export CONECTA_API_SALT='o-mesmo-salt-de-antes'
+```
+
+```bash
+export SUPABASE_DB_URL='postgresql://postgres.SEU_PROJETO:SENHA@aws-1-sa-east-1.pooler.supabase.com:5432/postgres'
+```
+
+```bash
+./infra/postgres/importar-supabase.sh
+```
+
+Use a porta **5432** (Session pooler). O script copia usuários, instituições, comunicações, inscrições e logs, ajusta os contadores de id e limpa o cache do Redis.
+
+## 6. Testes realizados
 
 Ambiente: 1 manager + 2 workers `docker:dind`.
 
@@ -377,7 +407,7 @@ Ambiente: 1 manager + 2 workers `docker:dind`.
 
 ---
 
-## 6. Problemas comuns
+## 7. Problemas comuns
 
 | Sintoma | Causa / solução |
 |---------|-----------------|

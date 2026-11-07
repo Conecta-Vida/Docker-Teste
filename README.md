@@ -23,8 +23,8 @@ Gabriel Dias Ribeiro · Gustavo Barros Tenório · Luiz Henrique Gonçalves · R
 ├── core/          # módulo Java compartilhado (entidades, repositórios, serviços, RabbitMQ)
 ├── admin-api/     # API do painel administrativo  -> porta 8080  (+ Dockerfile)
 ├── mobile-api/    # API do aplicativo do cidadão  -> porta 8081  (+ Dockerfile)
-├── admin-web/     # painel administrativo React + Vite, servido por Nginx (+ Dockerfile)
-├── mobile-app/    # aplicativo Flutter do cidadão
+├── admin-web/     # painel administrativo V2 (React + Vite), servido por Nginx (+ Dockerfile)
+├── mobile-app/    # aplicativo Flutter do cidadão (+ Dockerfile: versão Web na porta 8089)
 ├── infra/
 │   ├── postgres/init/   # schema e dados de demonstração do banco
 │   └── swarm/seminario.sh  # roteiro automatizado do seminário (Swarm + DinD)
@@ -40,7 +40,7 @@ Gabriel Dias Ribeiro · Gustavo Barros Tenório · Luiz Henrique Gonçalves · R
 ./infra/swarm/seminario.sh subir
 ```
 
-Depois abra o **Visualizer** em http://localhost:8085 e o **painel** em http://localhost:8088 (`admin@conectavida.com` / `admin123`).
+Depois abra o **Visualizer** em http://localhost:8085, o **painel admin** em http://localhost:8088 (`admin@conectavida.com` / `admin123`) e o **app do cidadão** em http://localhost:8089 (`cidadao@conectavida.com` / `cidadao123`).
 
 Para demonstrar a escalabilidade:
 
@@ -59,7 +59,7 @@ Para demonstrar a escalabilidade:
 docker run -d --name cv-postgres -p 5432:5432 -e POSTGRES_DB=conectavida -e POSTGRES_USER=conectavida -e POSTGRES_PASSWORD=conectavida -v "$PWD/infra/postgres/init:/docker-entrypoint-initdb.d:ro" postgres:17-alpine
 ```
 
-**2. APIs** (JDK 17 ou mais novo), cada uma num terminal:
+**2. APIs** (JDK 21), cada uma num terminal:
 
 ```bash
 ./gradlew :admin-api:bootRun

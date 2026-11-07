@@ -15,7 +15,8 @@ RUN npm ci --no-audit --no-fund
 
 # Código-fonte e build de produção (TypeScript + Vite -> /app/dist)
 COPY . .
-ARG VITE_API_URL=/api
+# Vazio = mesma origem: as rotas do admin V2 já começam com /api e o Nginx as encaminha
+ARG VITE_API_URL=
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 

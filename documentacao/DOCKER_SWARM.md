@@ -4,39 +4,35 @@ Guia da atividade de **conteinerização e orquestração**: as imagens, a stack
 
 ![Visualizer com 3 nós](midia/visualizer-3-nos.png)
 
-🎬 **Vídeo da demonstração:** [`midia/demo-conectavida-swarm.mp4`](midia/demo-conectavida-swarm.mp4). Ele mostra o cluster, o escalonamento ao vivo e o painel web consumindo a API dentro do Swarm.
+🎬 **Vídeo:** [`midia/demo-conectavida-swarm.mp4`](midia/demo-conectavida-swarm.mp4) mostra o cluster e o escalonamento ao vivo (gravado com a versão anterior do painel).
 
 ---
 
 ## 1. Arquitetura
 
 ```
-                       ┌──────────── rede overlay: conectavida-net ────────────┐
- Navegador ──8088──▶ admin-web (Nginx) ──/api──▶ admin-api ──┐                 │
-                                                  (8080)     ├──▶ postgres     │
- App Flutter ──8081──────────────────────────▶ mobile-api ───┘    (5432)       │
-                                                  ▲                            │
-                       admin-api ──publica──▶ rabbitmq ──entrega──┘            │
-                                              (5672/15672)                     │
- Navegador ──8085──▶ visualizer (lê o docker.sock do manager)                  │
-                       └───────────────────────────────────────────────────────┘
+                 ┌──────────────── rede overlay: conectavida-net ────────────────┐
+ Navegador ─8088─▶ admin-web (Nginx) ──/api──▶ admin-api (8080) ──┐              │
+                                                                  ├─▶ postgres   │
+ Navegador ─8089─▶ mobile-web (Nginx) ─/api──▶ mobile-api (8081) ─┘    (5432)    │
+ App Flutter (celular/emulador) ─────8081────▶ mobile-api                        │
+ Navegador ─8085─▶ visualizer (lê o docker.sock do manager)                      │
+                 └────────────────────────────────────────────────────────────────┘
 ```
 
 | # | Serviço | Imagem | Porta | Réplicas | Onde roda |
 |---|---------|--------|-------|----------|-----------|
 | 1 | `postgres` | `postgres:17-alpine` | 5432 | 1 | manager |
-| 2 | `rabbitmq` | `rabbitmq:4-management-alpine` | 5672 / 15672 | 1 | manager |
-| 3 | `admin-api` | `conectavida/admin-api` (nossa, Java 21) | 8080 | 2 | qualquer nó |
-| 4 | `mobile-api` | `conectavida/mobile-api` (nossa, Java 21) | 8081 | 3 | qualquer nó |
-| 5 | `visualizer` | `dockersamples/visualizer:stable` | 8085 | 1 | manager |
-| 6 | `redis` | `redis:7-alpine` (cache do dashboard) | interna | 1 | qualquer nó |
-| 7 | `admin-web` | `conectavida/admin-web` (painel admin V2, React) | 8088 | 2 | qualquer nó |
-| 8 | `mobile-web` | `conectavida/mobile-web` (app Flutter no navegador) | 8089 | 2 | qualquer nó |
+| 2 | `admin-api` | `conectavida/admin-api` (nossa, Java 21) | 8080 | 2 | qualquer nó |
+| 3 | `mobile-api` | `conectavida/mobile-api` (nossa, Java 21) | 8081 | 3 | qualquer nó |
+| 4 | `visualizer` | `dockersamples/visualizer:stable` | 8085 | 1 | manager |
+| 5 | `admin-web` | `conectavida/admin-web` (painel admin V2, React) | 8088 | 2 | qualquer nó |
+| 6 | `mobile-web` | `conectavida/mobile-web` (app Flutter no navegador) | 8089 | 2 | qualquer nó |
 
-Os serviços 1 a 5 são os pedidos pelo professor; 6 a 8 completam o sistema.
-O backend é o **conecta-vida-backend** (Spring Boot 3.2, Java 21, Swagger, Redis, RabbitMQ).
+O banco roda **localmente, dentro do cluster** (serviço `postgres`); o Supabase só é usado se vocês importarem os dados dele (seção 5).
+O backend é o **conecta-vida-backend** (Spring Boot 3.2, Java 21, Swagger). RabbitMQ e Redis foram descartados do projeto.
 
-Todas as imagens usam **Alpine Linux**.
+Todas as imagens rodam em **Alpine Linux**.
 
 ### Por que dividir em `admin-api` e `mobile-api`?
 
@@ -44,17 +40,11 @@ O backend é **um único projeto Gradle com três módulos**:
 
 | Módulo | O que contém |
 |--------|--------------|
-| `core` | Entidades JPA, repositórios, serviços, configuração do RabbitMQ e as rotas usadas pelos dois clientes (`/api/auth`, `/api/usuarios`, `/api/comunicacoes`, inscrições em campanhas) |
-| `admin-api` | Rotas exclusivas do painel: dashboard, alertas, campanhas, instituições, logs e relatórios |
-| `mobile-api` | Rotas exclusivas do app (`/api/push`), o **consumidor da fila** do RabbitMQ que dispara as notificações push e um filtro que **bloqueia (403)** as operações de gestão herdadas do `core` (criar/excluir comunicações, listar todos os usuários, CSV) |
+| `core` | Entidades JPA, repositórios e serviços compartilhados (senha com salt, notificações, dashboard) |
+| `admin-api` | Rotas do painel do gestor: login de administrador, dashboard, alertas, campanhas, instituições, usuários, logs e relatórios |
+| `mobile-api` | Rotas do app do cidadão: cadastro e login, perfil, feed de comunicações, inscrição em campanhas e registro do celular |
 
 Assim cada API escala de forma independente. No dia de uma campanha de vacinação, por exemplo, só a `mobile-api` precisa de mais réplicas.
-
-### Para que serve o RabbitMQ?
-
-Quando o gestor publica um **ALERTA** no painel, a `admin-api` não envia o push diretamente. Ela publica um evento na exchange `conectavida.eventos`. A fila `conectavida.push` entrega cada mensagem para **uma única** réplica da `mobile-api` (padrão *competing consumers*). Essa réplica busca no banco os tokens dos celulares e chama o Firebase.
-
-Os tokens dos celulares ficam no **banco**, na tabela `dispositivos_push`. Antes eles ficavam na memória de um único processo: com várias réplicas, cada uma teria uma lista diferente e o push nunca chegaria a todos.
 
 ---
 
@@ -65,9 +55,9 @@ Os tokens dos celulares ficam no **banco**, na tabela `dispositivos_push`. Antes
 O `mobile-api/Dockerfile` é idêntico. Só mudam o módulo (`:mobile-api`) e a porta (8081).
 
 ```dockerfile
-FROM eclipse-temurin:17-jdk-alpine AS build
+FROM eclipse-temurin:21-jdk-alpine AS build
 ```
-**Estágio 1 (build).** Imagem com o **JDK 17** completo (compilador) sobre Alpine. O apelido `AS build` permite copiar arquivos deste estágio mais tarde.
+**Estágio 1 (build).** Imagem com o **JDK 21** completo (compilador) sobre Alpine. O apelido `AS build` permite copiar arquivos deste estágio mais tarde.
 
 ```dockerfile
 WORKDIR /workspace
@@ -89,7 +79,7 @@ RUN ./gradlew --no-daemon :admin-api:bootJar -x test
 Agora copia o código-fonte do **módulo compartilhado `:core`** e o da API, e gera o JAR executável `admin-api/build/libs/app.jar`. O Gradle compila o `:core` antes, porque a `admin-api` depende dele.
 
 ```dockerfile
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 RUN addgroup -S conectavida && adduser -S conectavida -G conectavida
 COPY --from=build --chown=conectavida:conectavida /workspace/admin-api/build/libs/app.jar app.jar
@@ -132,11 +122,11 @@ RUN npm ci --no-audit --no-fund
 
 ```dockerfile
 COPY . .
-ARG VITE_API_URL=/api
+ARG VITE_API_URL=
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 ```
-Copia o código e gera o build de produção (TypeScript + Vite) na pasta `dist/`. A URL da API é `/api`, um caminho relativo: quem resolve é o Nginx do próprio container. Por isso não há problema de CORS.
+Copia o código e gera o build de produção (TypeScript + Vite) na pasta `dist/`. `VITE_API_URL` vazio significa "mesmo endereço do site": as rotas do admin V2 já começam com `/api`, e quem as encaminha é o Nginx do próprio container.
 
 ```dockerfile
 FROM nginx:1.27-alpine
@@ -157,7 +147,6 @@ O arquivo [`admin-web/nginx/default.conf`](../admin-web/nginx/default.conf) faz 
 | Serviço | Por que esta imagem |
 |---------|---------------------|
 | `postgres:17-alpine` | Banco oficial, versão Alpine (menor) |
-| `rabbitmq:4-management-alpine` | Inclui o painel web de gerenciamento na porta 15672 |
 | `dockersamples/visualizer:stable` | Painel gráfico do livro *Descomplicando o Docker* |
 
 ---
@@ -167,11 +156,10 @@ O arquivo [`admin-web/nginx/default.conf`](../admin-web/nginx/default.conf) faz 
 ```yaml
 x-api-env: &api-env
   DB_URL: jdbc:postgresql://postgres:5432/conectavida
-  RABBITMQ_HOST: rabbitmq
-  MENSAGERIA_ENABLED: "true"
-  ...
+  DB_USERNAME: conectavida
+  CONECTA_API_SALT: ...
 ```
-**Âncora YAML**: as variáveis comuns às duas APIs ficam num lugar só e são reaproveitadas com `<<: *api-env`. Os hosts `postgres` e `rabbitmq` são **nomes de serviço**, resolvidos pelo DNS da rede overlay.
+**Âncora YAML**: as variáveis comuns às duas APIs ficam num lugar só e são reaproveitadas com `<<: *api-env`. O host `postgres` é o **nome do serviço**, resolvido pelo DNS da rede overlay.
 
 ```yaml
   postgres:
@@ -194,9 +182,9 @@ x-api-env: &api-env
 ```yaml
   admin-api:
     image: ${REGISTRY:-127.0.0.1:5000}/conectavida/admin-api:${TAG:-1.0}
-    depends_on: [postgres, rabbitmq]
+    depends_on: [postgres]
     deploy:
-      replicas: 2
+      replicas: ${ADMIN_API_REPLICAS:-2}
       update_config:
         parallelism: 1
         order: start-first
@@ -209,7 +197,7 @@ x-api-env: &api-env
 ```
 - `image`: as imagens vêm do **registry local do cluster** (`127.0.0.1:5000`). Os workers não têm as imagens que você construiu na sua máquina, então elas precisam estar num registry que todos os nós alcancem.
 - `depends_on`: o Swarm **ignora** essa opção, que fica só como documentação. Quem resolve a ordem de subida é a `restart_policy`: se a API subir antes do banco, ela falha e o Swarm tenta de novo depois de 10 s.
-- `replicas`: quantidade inicial de réplicas (2 na admin-api, 3 na mobile-api).
+- `replicas`: quantidade de réplicas. Vem de uma variável com valor padrão (`${MOBILE_API_REPLICAS:-3}`): sem nada, sobe 3; com `MOBILE_API_REPLICAS=6 docker stack deploy ...`, sobe 6. É assim que o `seminario.sh replicas` muda o número **pelo arquivo** (infraestrutura como código).
 - `update_config`: *rolling update*, uma réplica por vez, subindo a nova antes de derrubar a antiga (`start-first`). Assim a atualização não tem downtime. Cada réplica nova é observada por 30 s (`monitor`), e se falhar o Swarm **volta sozinho para a versão anterior** (`failure_action: rollback`). Para demonstrar: `TAG=1.1 docker stack deploy ...` com uma imagem nova.
 - `resources`: o `limit` impede uma réplica de consumir toda a RAM do nó. A `reservation` é a memória que o scheduler garante ao escolher o nó.
 
@@ -241,14 +229,17 @@ A rede **overlay** liga containers que estão em **nós diferentes** como se est
 
 ### Passo 0: pré-requisitos
 - **Docker Desktop** (Windows/Mac) ou **Docker Engine** (Linux).
-- No Windows, use o **Git Bash** ou o **WSL** para rodar o script `.sh`.
+- No Windows, use o **Git Bash** para rodar os scripts `.sh`.
 
 ```bash
 docker --version
+```
+
+```bash
 docker compose version
 ```
 
-### Opção A: tudo automático (recomendado para o seminário)
+### Opção A: tudo automático (recomendado)
 
 Na **raiz do repositório**:
 
@@ -258,7 +249,7 @@ Na **raiz do repositório**:
 
 O script executa todo o roteiro do professor:
 1. Ativa o Swarm (`docker swarm init`).
-2. **Tarefa 1:** constrói as 3 imagens (`admin-api`, `mobile-api`, `admin-web`).
+2. **Tarefa 1:** constrói as 4 imagens (`admin-api`, `mobile-api`, `admin-web`, `mobile-web`).
 3. Cria o registry local (`127.0.0.1:5000`) e envia as imagens para ele.
 4. **Tarefa 3.1:** cria `worker-1` e `worker-2` com `docker:dind`.
 5. **Tarefa 3.2:** pega o token (`docker swarm join-token worker`) e conecta os dois workers.
@@ -267,37 +258,29 @@ O script executa todo o roteiro do professor:
 
 Depois de cerca de 1 minuto:
 
-| O quê | Endereço |
-|-------|----------|
-| **Visualizer** | http://localhost:8085 |
-| **Painel admin** | http://localhost:8088 (login `admin@conectavida.com` / `admin123`) |
-| admin-api | http://localhost:8080/actuator/health |
-| mobile-api | http://localhost:8081/actuator/health |
-| RabbitMQ | http://localhost:15672 (`conectavida` / `conectavida`) |
+| O quê | Endereço | Login |
+|-------|----------|-------|
+| **Visualizer** | http://localhost:8085 | (sem login) |
+| **Painel admin V2** | http://localhost:8088 | `admin@conectavida.com` / `admin123` |
+| **App do cidadão** | http://localhost:8089 | `cidadao@conectavida.com` / `cidadao123` |
+| Swagger das APIs | http://localhost:8080/swagger-ui.html e http://localhost:8081/swagger-ui.html | (sem login) |
 
-**Tarefa 3.5: escalabilidade ao vivo** (deixe o Visualizer aberto no projetor):
-
-```bash
-./infra/swarm/seminario.sh escalar
-```
-
-Esse comando executa:
+**Apresentação guiada** (mostra o que falar e executa cada demonstração; Enter avança). Cola de 1 página: [ROTEIRO_APRESENTACAO.md](ROTEIRO_APRESENTACAO.md).
 
 ```bash
-docker service scale conectavida_mobile-api=6
-docker service scale conectavida_admin-api=4
-docker service scale conectavida_mobile-api=2
+./infra/swarm/seminario.sh apresentar
 ```
 
-Ver o estado do cluster e, ao final, desmontar tudo:
+Outros comandos:
 
-```bash
-./infra/swarm/seminario.sh status
-```
-
-```bash
-./infra/swarm/seminario.sh derrubar --apagar-dados
-```
+| Para | Comando |
+|---|---|
+| Réplicas pelo compose (infraestrutura como código) | `./infra/swarm/seminario.sh replicas mobile-api 6` |
+| Escalar pelo terminal (6/4/2) | `./infra/swarm/seminario.sh escalar` |
+| Simular a queda de uma máquina | `./infra/swarm/seminario.sh falha` |
+| Religar a máquina | `./infra/swarm/seminario.sh recuperar` |
+| Ver nós, serviços e réplicas | `./infra/swarm/seminario.sh status` |
+| Desmontar tudo e apagar o banco | `./infra/swarm/seminario.sh derrubar --apagar-dados` |
 
 ### Opção B: comando por comando (para explicar cada etapa)
 
@@ -317,6 +300,10 @@ docker build -t conectavida/mobile-api:1.0 -f mobile-api/Dockerfile .
 docker build -t conectavida/admin-web:1.0 -f admin-web/Dockerfile admin-web
 ```
 
+```bash
+docker build -t conectavida/mobile-web:1.0 -f mobile-app/Dockerfile mobile-app
+```
+
 Registry local e envio das imagens:
 
 ```bash
@@ -324,7 +311,7 @@ docker service create --name registry --publish published=5000,target=5000 --con
 ```
 
 ```bash
-for img in admin-api mobile-api admin-web; do docker tag conectavida/$img:1.0 127.0.0.1:5000/conectavida/$img:1.0; docker push 127.0.0.1:5000/conectavida/$img:1.0; done
+for img in admin-api mobile-api admin-web mobile-web; do docker tag conectavida/$img:1.0 127.0.0.1:5000/conectavida/$img:1.0; docker push 127.0.0.1:5000/conectavida/$img:1.0; done
 ```
 
 Workers Docker-in-Docker:
@@ -373,11 +360,12 @@ Os valores padrão servem para o laboratório. Para trocar senhas, copie `.env.e
 O Postgres da stack começa com dados de demonstração. Para trazer os dados do Supabase (só leitura, nada é alterado lá):
 
 1. Faça o deploy com o **mesmo salt** que o backend usava com o Supabase, senão os logins antigos não funcionam. O valor é o `app.security.salt` dos `application.properties` antigos.
-2. Com a stack rodando, no Git Bash:
 
 ```bash
 export CONECTA_API_SALT='o-mesmo-salt-de-antes'
 ```
+
+2. Com a stack rodando, no Git Bash:
 
 ```bash
 export SUPABASE_DB_URL='postgresql://postgres.SEU_PROJETO@aws-1-sa-east-1.pooler.supabase.com:5432/postgres'
@@ -391,23 +379,22 @@ export SUPABASE_DB_PASSWORD='senha-atual-do-banco'
 ./infra/postgres/importar-supabase.sh
 ```
 
-Use a porta **5432** (Session pooler) e o usuário no formato `postgres.SEU_PROJETO`. A senha vai separada, então pode ter `@`, `#` ou `/` sem problema. O script copia usuários, instituições, comunicações, inscrições e logs, ajusta os contadores de id e limpa o cache do Redis.
+Use a porta **5432** (Session pooler) e o usuário no formato `postgres.SEU_PROJETO`. A senha vai separada, então pode ter `@`, `#` ou `/` sem problema. O script copia usuários, instituições, comunicações, inscrições e logs e ajusta os contadores de id.
 
 ## 6. Testes realizados
 
-Ambiente: 1 manager + 2 workers `docker:dind`.
+Ambiente de teste: 1 manager + 2 workers `docker:dind`.
 
 | Teste | Resultado |
 |-------|-----------|
-| Build das 3 imagens (multi-stage, Alpine) | ✅ |
-| Stack com 6 serviços, réplicas distribuídas nos 3 nós | ✅ |
+| Build das 4 imagens (multi-stage, Alpine) | ✅ |
+| Stack distribuída nos 3 nós | ✅ |
 | Postgres inicializado pelos configs (schema + dados) e APIs com `ddl-auto=validate` | ✅ |
-| Login do admin pelo painel (admin-web → Nginx → admin-api → Postgres) | ✅ |
-| Token registrado na `mobile-api` (worker-1) e visível para as réplicas de outros nós | ✅ |
-| ALERTA criado na `admin-api` → RabbitMQ → consumido por **uma** réplica da `mobile-api` | ✅ |
-| `docker service scale` 6/4/2 refletido no Visualizer | ✅ (ver vídeo) |
-| Rolling update 1.0 → 1.1 com réplicas nos 3 nós | ✅ |
-| mobile-api bloqueia rotas de gestão (403) e libera as do app (200) | ✅ (+ 20 testes em `./gradlew :mobile-api:test`) |
+| Login do admin pelo painel V2 (admin-web → Nginx → admin-api → Postgres) | ✅ |
+| App: cadastro, login, feed e inscrição em campanha pela mobile-api | ✅ |
+| Importação: cópia de outro Postgres para o da stack, ignorando colunas extras | ✅ |
+| Rolling update 2.0 → 2.1 | ✅ |
+| Comando `replicas` (gera o deploy com o número pedido) | ✅ (lógica testada; deploy real a conferir no ensaio) |
 
 ---
 
@@ -418,15 +405,15 @@ Ambiente: 1 manager + 2 workers `docker:dind`.
 | Réplica em `Rejected` com "No such image" | A imagem não está no registry. Rode o `docker push` para `127.0.0.1:5000`. |
 | Workers não entram no Swarm | O manager foi iniciado com outro IP. Rode `docker swarm leave --force` e depois `docker swarm init --advertise-addr 172.17.0.1`. |
 | API reiniciando nos primeiros segundos | É normal: ela subiu antes do Postgres. A `restart_policy` resolve sozinha. |
-| Mudou o `02-seed.sql` e nada aconteceu | Os scripts só rodam com o volume vazio. Rode `docker stack rm conectavida`, espere alguns segundos e depois `docker volume rm conectavida_postgres-data`. |
-| Push não chega ao celular | Defina `FCM_SERVER_KEY` antes do deploy. Sem ela, o log mostra "Server Key não configurada". |
-| Visualizer com `localhost:8085` fora do ar | A porta usa a *routing mesh* do Swarm, que precisa do módulo IPVS do kernel. Ele já vem no Docker Desktop e nas distros Linux comuns. |
+| Mudou o `02-seed.sql` e nada aconteceu | Os scripts só rodam com o banco vazio. Rode `./infra/swarm/seminario.sh derrubar --apagar-dados` e suba de novo. |
+| Painel diz "Não foi possível conectar à API" | Espere ~1 minuto após o deploy e confira com `./infra/swarm/seminario.sh status`. |
+| Importação do Supabase: "password authentication failed" | Usuário deve ser `postgres.SEU_PROJETO`, porta 5432, senha atual em `SUPABASE_DB_PASSWORD`. |
 
 ## Limitações conhecidas
-- O limite de 3 tentativas de login fica na memória de cada réplica: com várias réplicas da `admin-api`, cada uma conta separadamente.
-- O "token" de login é simbólico (não é um JWT assinado) e as rotas não exigem autenticação. Isso vem do projeto original e está fora do escopo desta atividade.
+- Notificações push são **simuladas**: o alerta é registrado no log da API (o Firebase foi removido do backend novo).
+- O login não gera um JWT assinado e as rotas não exigem autenticação; isso vem do projeto original e está fora do escopo desta atividade.
 
 ## Segurança
 - As senhas do compose são **de laboratório**. Em produção, use `.env` ou *Docker secrets*.
 - O Visualizer acessa o socket do Docker: não o exponha publicamente.
-- Credenciais que já estiveram em commits antigos (Supabase/SMTP) devem ser **rotacionadas**. Removê-las do arquivo atual não as apaga do histórico do Git.
+- Credenciais que estiveram em commits (Supabase, Gmail, CloudAMQP) devem ser **trocadas**. Removê-las do arquivo atual não as apaga do histórico do Git.

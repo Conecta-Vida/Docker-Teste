@@ -2,7 +2,7 @@ package br.edu.ifsp.conectaavida.core.dto;
 
 import java.io.Serializable;
 
-// Implementa Serializable para que o Redis consiga guardar o objeto em memória com segurança
+// Implementa Serializable (DTO simples de transporte)
 public class DashboardStatsDTO implements Serializable {
     private long totalAlertas;
     private long alertasAtivos;

@@ -27,14 +27,10 @@ dependencies {
     // 🟢 CORREÇÃO: Apenas o core é necessário no Spring Boot 3.2
     api 'org.flywaydb:flyway-core'
 
-    // 🚀 NOVAS DEPENDÊNCIAS: Mensageria Assíncrona e Blindagem
-    api 'org.springframework.boot:spring-boot-starter-amqp'
+    // Observabilidade e blindagem (Actuator, AOP, Resilience4j)
     api 'org.springframework.boot:spring-boot-starter-actuator'
     api 'org.springframework.boot:spring-boot-starter-aop'
     api 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
-
-    // 🚀 NOVO: Redis para Cache de Alta Performance (Fase 2)
-    api 'org.springframework.boot:spring-boot-starter-data-redis'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'

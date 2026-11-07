@@ -67,8 +67,5 @@ for t in $TABELAS; do
 done
 rm -f /tmp/cv_local_cols
 
-# O dashboard fica em cache no Redis: limpa para mostrar os números novos
-R=$(docker ps -q -f name=conectavida_redis | head -1)
-[ -n "$R" ] && docker exec "$R" redis-cli FLUSHALL >/dev/null && echo "==> Cache do Redis limpo"
 
 echo "==> Importação concluída."

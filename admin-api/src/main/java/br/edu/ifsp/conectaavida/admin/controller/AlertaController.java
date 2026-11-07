@@ -40,15 +40,15 @@ public class AlertaController {
         }
         Comunicacao salva = comunicacaoRepository.save(alerta);
 
-        // Publica na fila do RabbitMQ; a mobile-api consome e dispara a notificação
+        // Dispara a notificação do alerta (registrada no log da API)
         try {
             fcmService.enviarParaTodos(
                     "🚨 " + salva.getTitulo(),
                     salva.getDescricao() != null ? salva.getDescricao() : "Alerta de saúde pública.",
                     Map.of("tipo", "ALERTA", "id", String.valueOf(salva.getId())));
         } catch (Exception e) {
-            // O alerta já está salvo; a falha da fila não deve impedir a publicação
-            System.err.println("⚠️ RabbitMQ indisponível, notificação não enfileirada: " + e.getMessage());
+            // O alerta já está salvo; uma falha na notificação não deve impedir a publicação
+            System.err.println("⚠️ Falha ao notificar: " + e.getMessage());
         }
         return ResponseEntity.ok(salva);
     }

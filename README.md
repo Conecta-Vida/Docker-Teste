@@ -6,7 +6,6 @@
 <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
 <img src="https://img.shields.io/badge/Flutter-3-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter">
 <img src="https://img.shields.io/badge/Docker%20Swarm-Alpine-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Swarm">
-<img src="https://img.shields.io/badge/RabbitMQ-4-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white" alt="RabbitMQ">
 </p>
 
 Plataforma que centraliza informações de saúde pública: notícias, alertas epidemiológicos, campanhas de vacinação e doação de sangue, e a rede de unidades de saúde. O gestor publica pelo **painel web** e o cidadão recebe tudo no **aplicativo**.
@@ -20,7 +19,7 @@ Gabriel Dias Ribeiro · Gustavo Barros Tenório · Luiz Henrique Gonçalves · R
 
 ```
 .
-├── core/          # módulo Java compartilhado (entidades, repositórios, serviços, RabbitMQ)
+├── core/          # módulo Java compartilhado (entidades, repositórios, serviços)
 ├── admin-api/     # API do painel administrativo  -> porta 8080  (+ Dockerfile)
 ├── mobile-api/    # API do aplicativo do cidadão  -> porta 8081  (+ Dockerfile)
 ├── admin-web/     # painel administrativo V2 (React + Vite), servido por Nginx (+ Dockerfile)
@@ -59,7 +58,7 @@ Só a demonstração de escalabilidade:
 
 ## 💻 Desenvolvimento local (sem Swarm)
 
-**1. Banco e RabbitMQ** em containers:
+**1. Banco** em container:
 
 ```bash
 docker run -d --name cv-postgres -p 5432:5432 -e POSTGRES_DB=conectavida -e POSTGRES_USER=conectavida -e POSTGRES_PASSWORD=conectavida -v "$PWD/infra/postgres/init:/docker-entrypoint-initdb.d:ro" postgres:17-alpine
@@ -75,7 +74,6 @@ docker run -d --name cv-postgres -p 5432:5432 -e POSTGRES_DB=conectavida -e POST
 ./gradlew :mobile-api:bootRun
 ```
 
-Sem RabbitMQ, a mensageria fica desligada (`MENSAGERIA_ENABLED=false`, o padrão) e o push é enviado diretamente.
 
 **3. Painel web** (Node 18+). O Vite encaminha `/api` para `localhost:8080`:
 

@@ -123,7 +123,6 @@ subir() {
   echo "  admin-api .......... http://localhost:8080/actuator/health"
   echo "  mobile-api ......... http://localhost:8081/actuator/health"
   echo "  Swagger ............ http://localhost:8080/swagger-ui.html e http://localhost:8081/swagger-ui.html"
-  echo "  RabbitMQ (painel) .. http://localhost:15672  (conectavida / conectavida)"
   echo "As APIs levam ~1 minuto para ficarem saudáveis. Acompanhe com: $0 status"
 }
 
@@ -185,7 +184,7 @@ apresentar() {
   pausa
 
   passo "2/7 - O que roda em cada nó (Visualizer)"
-  fala "Manager: postgres, rabbitmq, visualizer e registry - serviços com DADOS ficam presos"
+  fala "Manager: postgres (banco), visualizer e registry - o banco guarda DADOS e fica preso"
   fala "ao manager por 'constraint: node.role == manager'."
   fala "Workers: APIs e sites, sem estado - o Swarm espalha as cópias entre os nós."
   fala "Mesma cor no Visualizer = réplicas do mesmo serviço."
@@ -224,7 +223,7 @@ apresentar() {
   pausa
 
   passo "7/7 - Fim"
-  fala "Resumo: 8 serviços, 3 nós, rede overlay, réplicas declaradas no docker-compose.yml,"
+  fala "Resumo: 6 serviços, 3 nós, rede overlay, réplicas declaradas no docker-compose.yml,"
   fala "imagens multi-stage em Alpine, escalabilidade e recuperação automática."
   rm -f "$REPLICAS_ENV"
   deploy >/dev/null
@@ -254,8 +253,8 @@ derrubar() {
   done
 
   if [ "${2:-}" = "--apagar-dados" ]; then
-    passo "Apagando os dados do Postgres e do RabbitMQ (volumes)"
-    docker volume rm ${STACK}_postgres-data ${STACK}_rabbitmq-data 2>/dev/null || true
+    passo "Apagando os dados do Postgres (volume)"
+    docker volume rm ${STACK}_postgres-data 2>/dev/null || true
   fi
   echo "Pronto. Para sair do modo Swarm no manager: docker swarm leave --force"
 }

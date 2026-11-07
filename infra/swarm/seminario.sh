@@ -40,13 +40,15 @@ subir() {
     echo "Se os workers não conseguirem entrar: docker swarm leave --force e rode o script de novo."
   fi
 
-  passo "Tarefa 1: build das imagens (multi-stage, Alpine Linux)"
+  passo "Tarefa 1: build das 4 imagens (admin-api, mobile-api, admin-web, mobile-web)"
   if [ "${PULAR_BUILD:-0}" = "1" ]; then
     echo "PULAR_BUILD=1: usando as imagens já construídas."
   else
     docker build -t conectavida/admin-api:"$TAG" -f admin-api/Dockerfile .
     docker build -t conectavida/mobile-api:"$TAG" -f mobile-api/Dockerfile .
     docker build -t conectavida/admin-web:"$TAG" -f admin-web/Dockerfile admin-web
+    # O app Flutter demora mais na primeira vez (baixa o SDK do Flutter, ~1,5 GB)
+    docker build -t conectavida/mobile-web:"$TAG" -f mobile-app/Dockerfile mobile-app
   fi
 
   passo "Registry local do cluster (para os workers baixarem as imagens)"
@@ -58,7 +60,7 @@ subir() {
   until wget -qO- "http://$REGISTRY/v2/" >/dev/null 2>&1 || curl -fs "http://$REGISTRY/v2/" >/dev/null 2>&1; do
     i=$((i+1)); [ $i -gt 30 ] && { echo "Registry não respondeu"; exit 1; }; sleep 2
   done
-  for img in admin-api mobile-api admin-web; do
+  for img in admin-api mobile-api admin-web mobile-web; do
     docker tag conectavida/$img:"$TAG" $REGISTRY/conectavida/$img:"$TAG"
     docker push $REGISTRY/conectavida/$img:"$TAG"
   done
@@ -98,8 +100,10 @@ subir() {
   passo "Pronto!"
   echo "  Visualizer ......... http://localhost:8085"
   echo "  Painel admin (web) . http://localhost:8088  (admin@conectavida.com / admin123)"
+  echo "  App do cidadão ..... http://localhost:8089  (cidadao@conectavida.com / cidadao123)"
   echo "  admin-api .......... http://localhost:8080/actuator/health"
   echo "  mobile-api ......... http://localhost:8081/actuator/health"
+  echo "  Swagger ............ http://localhost:8080/swagger-ui.html e http://localhost:8081/swagger-ui.html"
   echo "  RabbitMQ (painel) .. http://localhost:15672  (conectavida / conectavida)"
   echo "As APIs levam ~1 minuto para ficarem saudáveis. Acompanhe com: $0 status"
 }

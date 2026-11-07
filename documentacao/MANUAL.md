@@ -210,15 +210,18 @@ O script desliga o `worker-2`. Em cerca de 30 segundos ele fica vermelho no Visu
 
 ---
 
-## Parte G: divisão sugerida para o grupo
+## Parte G: divisão para 3 apresentadores
 
-| Integrante | Parte |
-|---|---|
-| 1 | Abertura e Dockerfiles (F1 e F2) |
-| 2 | Swarm, nós e Visualizer (F4) |
-| 3 | Sistema funcionando (F5) |
-| 4 | Compose e variação de réplicas (F6) |
-| 5 | Queda de máquina e fechamento (F7 e F8) |
+| Quem | Partes | Tempo | Fica no controle de |
+|---|---|---|---|
+| **Pessoa 1** | Abertura e **Requisito 1: Dockerfiles** (F1 e F2) | ~4 min | VS Code (mostra `admin-api/Dockerfile` e `admin-web/Dockerfile`) |
+| **Pessoa 2** | **Requisito 2: Swarm** e sistema funcionando (F3, F4 e F5) | ~4 min | Git Bash (`apresentar`, passos 1 a 3) e navegador (painel e app) |
+| **Pessoa 3** | **Requisito 3: Compose e réplicas**, queda de máquina e fechamento (F6, F7 e F8) | ~4 min | VS Code (`docker-compose.yml`) e Git Bash (passos 4 a 7) |
+
+**Dicas:**
+- Um só computador e um só terminal: quem está falando pede para o colega apertar Enter, ou assume o teclado na sua vez.
+- A Pessoa 2 já deixa o painel e o app logados antes de começar.
+- Se perguntarem sobre o registry: "É um depósito de imagens dentro do cluster. Construímos as imagens no manager e os workers baixam de lá." Para mostrar: `curl http://localhost:5000/v2/_catalog`.
 
 ---
 

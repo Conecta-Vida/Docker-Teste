@@ -76,8 +76,14 @@ export interface ChartData {
 // CONFIGURAÇÃO CENTRAL DA INSTÂNCIA DO AXIOS
 // ===================================================================
 
+// URL da admin-api:
+//  - No Docker/Swarm: "/api" -> o Nginx do container admin-web encaminha para o serviço admin-api.
+//  - Em desenvolvimento (npm run dev): o Vite faz o mesmo proxy para http://localhost:8080.
+//  - Para apontar para outro servidor, defina VITE_API_URL no build (ex.: https://minha-api.com/api).
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 const api = axios.create({
-  baseURL: 'https://conecta-vida-api.onrender.com/api', // 🚀 Apontando corretamente para o seu link do Render!
+  baseURL: API_URL,
   timeout: 12000,
   headers: {
     'Content-Type': 'application/json',

@@ -1,2 +1,20 @@
-/mvnw text eol=lf
-*.cmd text eol=crlf
+# Arquivos executados dentro de containers Linux ou pelo Git Bash precisam de LF,
+# mesmo quando o repositório é clonado no Windows (core.autocrlf=true).
+*.sh        text eol=lf
+gradlew     text eol=lf
+Dockerfile  text eol=lf
+*.yml       text eol=lf
+*.sql       text eol=lf
+*.conf      text eol=lf
+*.properties text eol=lf
+.dockerignore text eol=lf
+
+# Scripts do Windows
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# Binários
+*.jar       binary
+*.png       binary
+*.mp4       binary
+*.pdf       binary

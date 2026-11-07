@@ -12,3 +12,6 @@ dependencies {
     // Importa as entidades, repositórios e as ferramentas do módulo base
     implementation project(':core')
 }
+// Docker: gera somente o JAR executável com nome fixo (build/libs/app.jar)
+tasks.named('jar') { enabled = false }
+tasks.named('bootJar') { archiveFileName = 'app.jar' }

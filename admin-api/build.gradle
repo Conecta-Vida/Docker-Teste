@@ -17,3 +17,6 @@ dependencies {
 
     runtimeOnly 'org.postgresql:postgresql'
 }
+// Docker: gera somente o JAR executável com nome fixo (build/libs/app.jar)
+tasks.named('jar') { enabled = false }
+tasks.named('bootJar') { archiveFileName = 'app.jar' }

@@ -42,7 +42,9 @@ public class FcmService {
      * Fica escutando a fila invisivelmente. Quando chega uma mensagem, ele a processa
      * sem afetar o tempo de resposta do cidadão ou do gestor.
      */
-    @RabbitListener(queues = RabbitMQConfig.FILA_NOTIFICACOES)
+    // Só a mobile-api consome (app.mensageria.consumidor=true); a admin-api apenas publica.
+    @RabbitListener(queues = RabbitMQConfig.FILA_NOTIFICACOES,
+            autoStartup = "${app.mensageria.consumidor:true}")
     public void processarFilaEmBackground(Map<String, String> payload) {
 
         String titulo = payload.get("titulo");

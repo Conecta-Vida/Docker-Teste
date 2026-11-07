@@ -79,7 +79,7 @@ export const InstituicoesList = ({ onEdit }: InstituicoesListProps) => {
                     <Edit size={18} />
                   </button>
                   <button 
-                    onClick={() => handleDelete(inst.id, inst.nome)}
+                    onClick={() => handleDelete(String(inst.id), inst.nome)}
                     disabled={isDeleting}
                     className="text-red-600 hover:text-red-800 transition-colors disabled:opacity-50" 
                     title="Remover"

@@ -7,3 +7,5 @@ export interface Instituicao {
   telefone: string;
   status: string;
 }
+// Nome usado pelos componentes de listagem/modal
+export type InstituicaoSaude = Instituicao;

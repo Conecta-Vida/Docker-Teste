@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Users, Megaphone, Building2, LogOut, Menu, X } from "lucide-react";
 
 export const AdminLayout: React.FC = () => {
@@ -23,6 +23,11 @@ export const AdminLayout: React.FC = () => {
   const handleLinkClick = () => {
     setIsMobileMenuOpen(false);
   };
+
+  // Sem sessão (login feito na admin-api) volta para a tela de login
+  if (!localStorage.getItem("user")) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-gray-50 overflow-x-hidden">

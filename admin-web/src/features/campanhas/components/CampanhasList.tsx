@@ -62,7 +62,7 @@ export const CampanhasList = ({ onEdit }: CampanhasListProps) => {
                 <td className="p-4 text-gray-600 flex items-center gap-2">
                   <Calendar size={16} className="text-gray-400" />
                   <span className="text-sm">
-                    {new Date(campanha.dataInicio).toLocaleDateString()} - {new Date(campanha.dataFim).toLocaleDateString()}
+                    {new Date(campanha.dataInicio ?? '').toLocaleDateString()} - {new Date(campanha.dataFim ?? '').toLocaleDateString()}
                   </span>
                 </td>
                 <td className="p-4">
@@ -83,7 +83,7 @@ export const CampanhasList = ({ onEdit }: CampanhasListProps) => {
                     <Edit size={18} />
                   </button>
                   <button 
-                    onClick={() => handleDelete(campanha.id, campanha.titulo)}
+                    onClick={() => handleDelete(String(campanha.id), campanha.titulo ?? '')}
                     disabled={isDeleting}
                     className="text-red-600 hover:text-red-800 transition-colors disabled:opacity-50" 
                     title="Remover"

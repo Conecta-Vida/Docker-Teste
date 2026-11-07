@@ -39,6 +39,10 @@ public class ComunicacaoController {
     public ResponseEntity<?> cadastrarComunicacao(@RequestBody Comunicacao comunicacao) {
         try {
             comunicacao.setDataPostada(LocalDateTime.now());
+            // Sem "lido" no JSON o valor chegava null e o alerta sumia da lista de ativos
+            if (comunicacao.getLido() == null) {
+                comunicacao.setLido(false);
+            }
             Comunicacao salva = comunicacaoRepository.save(comunicacao);
 
             // ALERTA vira evento no RabbitMQ -> mobile-api dispara o push

@@ -4,6 +4,7 @@ import br.edu.ifsp.conectaavida.core.domain.Usuario;
 import br.edu.ifsp.conectaavida.core.dto.UsuarioResponseDTO;
 import br.edu.ifsp.conectaavida.core.mapper.UsuarioMapper;
 import br.edu.ifsp.conectaavida.core.repository.UsuarioRepository;
+import br.edu.ifsp.conectaavida.core.security.PasswordEncryptionService;
 import br.edu.ifsp.conectaavida.core.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,9 @@ public class UsuarioController {
     // Injeção do nosso novo conversor automático
     @Autowired
     private UsuarioMapper usuarioMapper;
+
+    @Autowired
+    private PasswordEncryptionService encryptionService;
 
     // Lista todos os usuários do sistema retornando apenas dados seguros (DTO)
     @GetMapping
@@ -63,5 +67,22 @@ public class UsuarioController {
         }
         usuarioRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Usado pelo painel admin V2 (botão "Editar"). Só altera os campos enviados.
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizarUsuario(@PathVariable Long id, @RequestBody Usuario dados) {
+        return usuarioRepository.findById(id).map(usuario -> {
+            if (dados.getNome() != null) usuario.setNome(dados.getNome());
+            if (dados.getEmail() != null) usuario.setEmail(dados.getEmail());
+            if (dados.getPermissao() != null) usuario.setPermissao(dados.getPermissao());
+            if (dados.getLocalizacao() != null) usuario.setLocalizacao(dados.getLocalizacao());
+            if (dados.getSexo() != null) usuario.setSexo(dados.getSexo());
+            if (dados.getDataNascimento() != null) usuario.setDataNascimento(dados.getDataNascimento());
+            if (dados.getSenha() != null && !dados.getSenha().isBlank()) {
+                usuario.setSenha(encryptionService.criptografarSenha(dados.getSenha()));
+            }
+            return ResponseEntity.ok(usuarioMapper.toDto(usuarioRepository.save(usuario)));
+        }).orElse(ResponseEntity.notFound().build());
     }
 }

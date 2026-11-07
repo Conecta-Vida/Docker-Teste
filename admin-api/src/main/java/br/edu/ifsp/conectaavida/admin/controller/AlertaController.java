@@ -2,16 +2,21 @@ package br.edu.ifsp.conectaavida.admin.controller;
 
 import br.edu.ifsp.conectaavida.core.domain.Comunicacao;
 import br.edu.ifsp.conectaavida.core.repository.ComunicacaoRepository;
+import br.edu.ifsp.conectaavida.core.security.FcmService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/alertas")
 public class AlertaController {
+
+    @Autowired
+    private FcmService fcmService;
 
     @Autowired
     private ComunicacaoRepository comunicacaoRepository;
@@ -19,7 +24,7 @@ public class AlertaController {
     // Retorna a lista de todos os alertas
     @GetMapping
     public ResponseEntity<List<Comunicacao>> listarAlertas() {
-        List<Comunicacao> alertas = comunicacaoRepository.findByTipo("Alerta");
+        List<Comunicacao> alertas = comunicacaoRepository.findByTipoIgnoreCase("Alerta");
         return ResponseEntity.ok(alertas);
     }
 
@@ -30,7 +35,21 @@ public class AlertaController {
         if (alerta.getDataPostada() == null) {
             alerta.setDataPostada(LocalDateTime.now());
         }
+        if (alerta.getLido() == null) {
+            alerta.setLido(false); // sem isso o alerta não aparece como "ativo" no app
+        }
         Comunicacao salva = comunicacaoRepository.save(alerta);
+
+        // Publica na fila do RabbitMQ; a mobile-api consome e dispara a notificação
+        try {
+            fcmService.enviarParaTodos(
+                    "🚨 " + salva.getTitulo(),
+                    salva.getDescricao() != null ? salva.getDescricao() : "Alerta de saúde pública.",
+                    Map.of("tipo", "ALERTA", "id", String.valueOf(salva.getId())));
+        } catch (Exception e) {
+            // O alerta já está salvo; a falha da fila não deve impedir a publicação
+            System.err.println("⚠️ RabbitMQ indisponível, notificação não enfileirada: " + e.getMessage());
+        }
         return ResponseEntity.ok(salva);
     }
 

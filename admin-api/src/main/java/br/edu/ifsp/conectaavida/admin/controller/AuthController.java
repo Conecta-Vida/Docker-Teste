@@ -44,7 +44,9 @@ public class AuthController {
             String senhaCriptografada = encryptionService.criptografarSenha(senha);
 
             // Verifica se a senha bate e se a pessoa tem permissão de Administrador
-            if (usuario.getSenha().equals(senhaCriptografada)) {
+            // Aceita também o hash legado (sem salt), como no backend antigo
+            String senhaLegada = encryptionService.criptografarSenhaLegada(senha);
+            if (usuario.getSenha().equals(senhaCriptografada) || usuario.getSenha().equals(senhaLegada)) {
                 if (!"Administrador".equalsIgnoreCase(usuario.getPermissao())) {
                     // Erro 403 Forbidden: Acesso Negado
                     return ResponseEntity.status(HttpStatus.FORBIDDEN)

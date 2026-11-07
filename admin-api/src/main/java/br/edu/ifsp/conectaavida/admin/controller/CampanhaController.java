@@ -23,7 +23,7 @@ public class CampanhaController {
     // Retorna a lista de todas as campanhas
     @GetMapping
     public ResponseEntity<List<Comunicacao>> listarCampanhas() {
-        List<Comunicacao> campanhas = comunicacaoRepository.findByTipo("Campanha");
+        List<Comunicacao> campanhas = comunicacaoRepository.findByTipoIgnoreCase("Campanha");
         return ResponseEntity.ok(campanhas);
     }
 

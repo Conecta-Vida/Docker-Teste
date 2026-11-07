@@ -29,7 +29,7 @@ public class FeedController {
     @GetMapping("/alertas")
     public ResponseEntity<List<Comunicacao>> buscarAlertasAtivos() {
         // Traz apenas alertas que ainda não foram marcados como lidos/inativos
-        List<Comunicacao> alertas = comunicacaoRepository.findByTipoAndLidoFalseOrderByDataPostadaDesc("Alerta");
+        List<Comunicacao> alertas = comunicacaoRepository.findByTipoIgnoreCaseAndLidoFalseOrderByDataPostadaDesc("Alerta");
         return ResponseEntity.ok(alertas);
     }
 
@@ -37,7 +37,7 @@ public class FeedController {
     @GetMapping("/noticias")
     public ResponseEntity<List<Comunicacao>> buscarNoticiasRecentes() {
         // Traz as notícias ordenadas das mais novas para as mais antigas
-        List<Comunicacao> noticias = comunicacaoRepository.findByTipoOrderByDataInicioDesc("Noticia");
+        List<Comunicacao> noticias = comunicacaoRepository.findByTipoIgnoreCaseOrderByDataInicioDesc("Noticia");
         return ResponseEntity.ok(noticias);
     }
 }

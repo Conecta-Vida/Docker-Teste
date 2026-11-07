@@ -14,10 +14,10 @@ public class DashboardService {
 
     @Cacheable("dashboardStats") // 🚀 O Redis guarda o DTO puro em cache com sucesso
     public DashboardStatsDTO getStats() {
-        long alertas = comunicacaoRepository.countByTipo("Alerta");
-        long alertasAtivos = comunicacaoRepository.countByTipoAndStatus("Alerta", "Ativo");
-        long campanhas = comunicacaoRepository.countByTipo("Campanha");
-        long noticias = comunicacaoRepository.countByTipo("Noticia");
+        long alertas = comunicacaoRepository.countByTipoIgnoreCase("Alerta");
+        long alertasAtivos = comunicacaoRepository.countByTipoIgnoreCaseAndStatusIgnoreCase("Alerta", "Ativo");
+        long campanhas = comunicacaoRepository.countByTipoIgnoreCase("Campanha");
+        long noticias = comunicacaoRepository.countByTipoIgnoreCase("Noticia");
 
         return new DashboardStatsDTO(alertas, alertasAtivos, campanhas, noticias);
     }

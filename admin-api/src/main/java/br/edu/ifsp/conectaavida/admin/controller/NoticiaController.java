@@ -22,7 +22,7 @@ public class NoticiaController {
     @GetMapping
     public ResponseEntity<List<Comunicacao>> listarNoticias() {
         // Usa o nosso método customizado no repositório para buscar apenas Notícias
-        List<Comunicacao> noticias = comunicacaoRepository.findByTipo("Noticia");
+        List<Comunicacao> noticias = comunicacaoRepository.findByTipoIgnoreCase("Noticia");
         return ResponseEntity.ok(noticias);
     }
 

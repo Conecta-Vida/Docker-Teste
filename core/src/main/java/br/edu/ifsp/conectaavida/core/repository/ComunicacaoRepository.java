@@ -14,26 +14,28 @@ import java.util.List;
  * O Spring lê o nome do método (ex: findByTipo) e escreve o "SELECT * FROM..." sozinho!
  */
 @Repository
+// Consultas por "tipo" ignoram maiúsculas: dados antigos usam ALERTA/CAMPANHA/NOTICIA,
+// o painel admin V2 grava Alerta/Campanha/Noticia.
 public interface ComunicacaoRepository extends JpaRepository<Comunicacao, Long> {
 
     // Busca todas as comunicações de um tipo específico (ex: "Alerta" ou "Notícia")
-    List<Comunicacao> findByTipo(String tipo);
+    List<Comunicacao> findByTipoIgnoreCase(String tipo);
 
     // Busca filtrando por dois campos ao mesmo tempo (Tipo + Categoria)
-    List<Comunicacao> findByTipoAndCategoria(String tipo, String categoria);
+    List<Comunicacao> findByTipoIgnoreCaseAndCategoria(String tipo, String categoria);
 
     // Busca filtrando por Tipo e Localização (Útil para mostrar alertas apenas de um bairro)
-    List<Comunicacao> findByTipoAndLocalizacao(String tipo, String localizacao);
+    List<Comunicacao> findByTipoIgnoreCaseAndLocalizacao(String tipo, String localizacao);
 
     // Busca pelo tipo, mas já traz ordenado do mais recente para o mais antigo pela data de início
-    List<Comunicacao> findByTipoOrderByDataInicioDesc(String tipo);
+    List<Comunicacao> findByTipoIgnoreCaseOrderByDataInicioDesc(String tipo);
 
     // Traz todas as comunicações de um tipo que AINDA NÃO FORAM LIDAS, ordenadas pela data de postagem
-    List<Comunicacao> findByTipoAndLidoFalseOrderByDataPostadaDesc(String tipo);
+    List<Comunicacao> findByTipoIgnoreCaseAndLidoFalseOrderByDataPostadaDesc(String tipo);
 
     // Em vez de trazer a lista completa, apenas CONTA quantos registros existem.
     // É muito mais leve para o banco de dados e perfeito para montar o Dashboard!
-    long countByTipoAndLidoFalse(String tipo);
-    long countByTipoAndStatus(String tipo, String status);
-    long countByTipo(String tipo);
+    long countByTipoIgnoreCaseAndLidoFalse(String tipo);
+    long countByTipoIgnoreCaseAndStatusIgnoreCase(String tipo, String status);
+    long countByTipoIgnoreCase(String tipo);
 }

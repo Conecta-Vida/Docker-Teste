@@ -1,0 +1,36 @@
+name: mobile_app
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^8.0.2
+  url_launcher: ^6.3.2
+  geolocator: ^9.0.2
+  supabase_flutter: ^1.4.0
+  share_plus: 12.0.2
+  flutter_dotenv: ^5.1.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  http: ^1.6.0
+  firebase_core: 3.6.0
+  firebase_messaging: 15.1.3
+  flutter_local_notifications: 17.2.2
+  provider: ^6.1.2
+
+dev_dependencies:
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - .env
+    - assets/images/background.png
+    - assets/images/vacina_banner.png
+    

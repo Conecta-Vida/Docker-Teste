@@ -1,0 +1,12 @@
+{
+  "folders": [
+    {
+      "path": "admin"
+    }
+  ],
+  "settings": {
+    "java.project.sourcePaths": [
+      "src/main/java"
+    ]
+  }
+}

@@ -3,6 +3,10 @@
 Projeto **Conecta Vida**, IFSP Bragança Paulista.
 Repositório: https://github.com/Conecta-Vida/Docker-Teste
 
+Todas as fotos e vídeos deste manual foram feitos com o projeto rodando de verdade num cluster de 3 nós e estão na pasta [`documentacao/midia/`](midia/) do GitHub. A lista completa está na **Parte K**.
+
+![Docker Visualizer com os 3 nós](midia/05-visualizer-3-nos.png)
+
 ---
 
 ## Parte A: o que o professor pediu e onde está
@@ -90,6 +94,10 @@ O script faz tudo sozinho:
 5. Conecta os workers ao manager e etiqueta os nós.
 6. Faz o deploy: `docker stack deploy -c docker-compose.yml conectavida`.
 
+> **O que é o registry?** Um "depósito de imagens" dentro do cluster (`127.0.0.1:5000`). As imagens são construídas no manager e enviadas para lá; os workers, que têm um Docker próprio e vazio, baixam as imagens dele. Para ver o conteúdo: `curl http://localhost:5000/v2/_catalog`.
+
+![Imagens guardadas no registry local](midia/08-registry.png)
+
 **C4.** Espere cerca de **1 minuto** e confira:
 
 ```bash
@@ -99,6 +107,8 @@ O script faz tudo sozinho:
 Está pronto quando:
 - os 3 nós aparecem como `Ready`;
 - todos os serviços mostram réplicas completas (`1/1`, `2/2`, `3/3`).
+
+![docker node ls com os 3 nós](midia/04-docker-node-ls.png)
 
 **C5.** Abra no navegador:
 
@@ -110,6 +120,10 @@ Está pronto quando:
 | Documentação das APIs | http://localhost:8080/swagger-ui.html | (sem login) |
 
 > Para o app parecer de celular: aperte **F12** no Chrome e clique no ícone de celular (Ctrl+Shift+M).
+
+| Painel admin | App do cidadão |
+|---|---|
+| ![Dashboard do painel admin](midia/10-painel-dashboard.png) | ![Tela inicial do app](midia/15-app-inicio.png) |
 
 ---
 
@@ -170,6 +184,12 @@ Abra o `admin-web/Dockerfile`:
 
 > "No total são 4 imagens nossas: as duas APIs, o painel e o app em versão web."
 
+![Dockerfile multi-stage da admin-api](midia/01-dockerfile-admin-api.png)
+
+![Dockerfile do admin-web](midia/02-dockerfile-admin-web.png)
+
+![As 4 imagens em Alpine, sem root](midia/03-imagens-alpine.png)
+
 ### F3. Iniciar o roteiro guiado
 No Git Bash:
 
@@ -185,10 +205,18 @@ O script mostra **em amarelo o que falar**, executa cada demonstração e espera
 - **Passo 2, o Visualizer:**
   > "O banco fica **fixo no manager** (`constraint: node.role == manager`), porque guarda dados. As APIs e os sites não guardam estado, então o Swarm **espalha as cópias** entre os nós. Caixas da mesma cor são réplicas do mesmo serviço."
 
+🎬 **Vídeo:** [os 3 nós e o Visualizer (21 s)](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-1-cluster-3-nos.mp4)
+
+![Constraint do postgres no manager](midia/07-compose-postgres.png)
+
 ### F5. O sistema funcionando (passo 3, 2 min)
 - No **painel**, mostre o dashboard e, em **Campanhas**, crie uma campanha nova (ex.: "Vacinação contra a gripe").
 - No **app**, atualize a página e mostre a campanha aparecendo para o cidadão, que pode se inscrever.
 > "As duas telas conversam com APIs que estão rodando em vários nós do cluster, ao mesmo tempo."
+
+🎬 **Vídeo:** [login no painel e no app, campanha criada no painel aparecendo no app (65 s)](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-5-sistema-funcionando.mp4)
+
+![Campanha criada no painel aparecendo no app](midia/16-sistema-funcionando.png)
 
 ### F6. Requisito 3: Compose e variação de réplicas (passos 4 e 5, 3 min)
 Antes do passo 4, mostre no VS Code o `docker-compose.yml`:
@@ -200,10 +228,18 @@ Antes do passo 4, mostre no VS Code o `docker-compose.yml`:
 - **Passo 5:** o script usa `docker service scale`.
   > "Também dá para escalar direto pelo terminal. O arquivo continua sendo a referência: no próximo deploy, vale o que está nele."
 
+![Réplicas declaradas no docker-compose.yml](midia/06-compose-replicas.png)
+
+🎬 **Vídeo:** [mobile-api de 3 para 6 e de volta para 2 pelo docker-compose.yml (66 s)](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-2-replicas-pelo-compose.mp4)
+
+🎬 **Vídeo:** [admin-api de 2 para 4 com docker service scale (46 s)](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-3-escala-pelo-terminal.mp4)
+
 ### F7. Extra: alta disponibilidade (passo 6, 1 min)
 > "E se uma máquina cair?"
 
 O script desliga o `worker-2`. Em cerca de 30 segundos ele fica vermelho no Visualizer e as réplicas dele reaparecem nos outros nós. Atualize o painel para mostrar que o sistema continua funcionando. No próximo Enter o worker é religado.
+
+🎬 **Vídeo:** [worker-2 cai, as réplicas migram, e depois ele volta (75 s)](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-4-queda-de-maquina.mp4)
 
 ### F8. Fechamento (passo 7, 30 s)
 > "Atendemos os três requisitos: **Dockerfiles multi-stage** para 4 serviços, **cluster Swarm com 3 nós em Docker-in-Docker**, e **Docker Compose como infraestrutura como código**, variando réplicas e acompanhando tudo pelo **Docker Visualizer**. Obrigado!"
@@ -253,7 +289,7 @@ O script desliga o `worker-2`. Em cerca de 30 segundos ele fica vermelho no Visu
 | Depois do `falha`, o worker não volta | `./infra/swarm/seminario.sh recuperar` |
 | Quer recomeçar do zero | `./infra/swarm/seminario.sh derrubar --apagar-dados` e depois `./infra/swarm/seminario.sh subir` |
 | Importação do Supabase: "password authentication failed" | Usuário `postgres.pborxjuuexiqollesfxw`, porta 5432 e senha atual em `SUPABASE_DB_PASSWORD`. |
-| Nada funciona na hora da apresentação | Mostre o vídeo em `documentacao/midia/` e as capturas de tela. |
+| Nada funciona na hora da apresentação | Use os vídeos e fotos da **Parte K** (plano B). |
 
 ---
 
@@ -272,3 +308,43 @@ docker swarm leave --force
 ```
 
 Mais detalhes técnicos (cada Dockerfile e o compose explicados bloco a bloco): `documentacao/DOCKER_SWARM.md`.
+
+---
+
+## Parte K: fotos e vídeos (plano B e slides)
+
+Gravados com o projeto rodando num cluster de 3 nós (manager + 2 workers Docker-in-Docker). Arquivos em [`documentacao/midia/`](midia/).
+
+### Vídeos
+
+| Vídeo | Mostra | Usar em |
+|---|---|---|
+| [video-1-cluster-3-nos.mp4](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-1-cluster-3-nos.mp4) | `docker node ls` e o Visualizer com os 3 nós | Requisito 2 |
+| [video-2-replicas-pelo-compose.mp4](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-2-replicas-pelo-compose.mp4) | mobile-api 3 → 6 → 2 réplicas pelo `docker-compose.yml` | Requisito 3 |
+| [video-3-escala-pelo-terminal.mp4](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-3-escala-pelo-terminal.mp4) | admin-api 2 → 4 → 2 com `docker service scale` | Requisito 3 |
+| [video-4-queda-de-maquina.mp4](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-4-queda-de-maquina.mp4) | worker-2 cai e as réplicas migram para os outros nós | Extra |
+| [video-5-sistema-funcionando.mp4](https://github.com/Conecta-Vida/Docker-Teste/blob/main/documentacao/midia/video-5-sistema-funcionando.mp4) | painel cria uma campanha e ela aparece no app | Sistema |
+
+> No GitHub, clique no vídeo e depois em **View raw** (ou no botão de download) para baixar o `.mp4` e colocar nos slides.
+
+### Fotos
+
+| Foto | Mostra |
+|---|---|
+| [01-dockerfile-admin-api.png](midia/01-dockerfile-admin-api.png) | Dockerfile multi-stage da admin-api |
+| [02-dockerfile-admin-web.png](midia/02-dockerfile-admin-web.png) | Dockerfile do painel (Node + Nginx) |
+| [03-imagens-alpine.png](midia/03-imagens-alpine.png) | As 4 imagens, Alpine Linux e usuário sem root |
+| [04-docker-node-ls.png](midia/04-docker-node-ls.png) | Os 3 nós do Swarm |
+| [05-visualizer-3-nos.png](midia/05-visualizer-3-nos.png) | Visualizer com os serviços distribuídos |
+| [06-compose-replicas.png](midia/06-compose-replicas.png) | Réplicas no docker-compose.yml |
+| [07-compose-postgres.png](midia/07-compose-postgres.png) | Banco fixo no manager (constraint) |
+| [08-registry.png](midia/08-registry.png) | Registry local com as imagens |
+| [09-painel-login.png](midia/09-painel-login.png) | Login do painel admin |
+| [10-painel-dashboard.png](midia/10-painel-dashboard.png) | Dashboard |
+| [11-painel-campanhas.png](midia/11-painel-campanhas.png) | Campanhas e alertas |
+| [12-painel-usuarios.png](midia/12-painel-usuarios.png) | Usuários |
+| [13-painel-instituicoes.png](midia/13-painel-instituicoes.png) | Instituições de saúde |
+| [14-app-login.png](midia/14-app-login.png) | Login do app |
+| [15-app-inicio.png](midia/15-app-inicio.png) | App mostrando o alerta ao cidadão |
+| [16-sistema-funcionando.png](midia/16-sistema-funcionando.png) | Campanha criada no painel aparecendo no app |
+

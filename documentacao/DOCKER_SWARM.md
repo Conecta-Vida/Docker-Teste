@@ -2,9 +2,9 @@
 
 Guia da atividade de **conteinerização e orquestração**: as imagens, a stack, o cluster de 3 nós e o roteiro do seminário.
 
-![Visualizer com 3 nós](midia/visualizer-3-nos.png)
+![Visualizer com 3 nós](midia/05-visualizer-3-nos.png)
 
-🎬 **Vídeo:** [`midia/demo-conectavida-swarm.mp4`](midia/demo-conectavida-swarm.mp4) mostra o cluster e o escalonamento ao vivo (gravado com a versão anterior do painel).
+🎬 **Vídeos e fotos:** veja a Parte K do [MANUAL.md](MANUAL.md) (réplicas pelo compose, escala pelo terminal, queda de máquina e o sistema funcionando).
 
 ---
 

@@ -1,0 +1,167 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-conectavida}
+      POSTGRES_USER: ${POSTGRES_USER:-conectavida}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-conectavida}
+    volumes:
+    - postgres-data:/var/lib/postgresql/data
+    configs:
+    - source: db-schema
+      target: /docker-entrypoint-initdb.d/01-schema.sql
+    - source: db-seed
+      target: /docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+    - conectavida-net
+    deploy:
+      labels:
+        conectavida.camada: dados
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      restart_policy:
+        condition: on-failure
+      endpoint_mode: dnsrr
+  admin-api:
+    image: ${REGISTRY:-127.0.0.1:5000}/conectavida/admin-api:${TAG:-1.0}
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-conectavida}
+      DB_USERNAME: ${POSTGRES_USER:-conectavida}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-conectavida}
+      DB_POOL_SIZE: '5'
+      CONECTA_API_SALT: ${CONECTA_API_SALT:-troque-este-salt-em-producao}
+      CONECTA_CORS_ORIGINS: ${CONECTA_CORS_ORIGINS:-http://localhost:5173,http://localhost:8088,http://localhost:8089,http://localhost}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      SERVER_PORT: '8080'
+    depends_on:
+    - postgres
+    networks:
+    - conectavida-net
+    deploy:
+      labels:
+        conectavida.camada: backend-admin
+      replicas: ${ADMIN_API_REPLICAS:-2}
+      update_config: &id001
+        parallelism: 1
+        order: start-first
+        monitor: 30s
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+      endpoint_mode: dnsrr
+  mobile-api:
+    image: ${REGISTRY:-127.0.0.1:5000}/conectavida/mobile-api:${TAG:-1.0}
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-conectavida}
+      DB_USERNAME: ${POSTGRES_USER:-conectavida}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-conectavida}
+      DB_POOL_SIZE: '5'
+      CONECTA_API_SALT: ${CONECTA_API_SALT:-troque-este-salt-em-producao}
+      CONECTA_CORS_ORIGINS: ${CONECTA_CORS_ORIGINS:-http://localhost:5173,http://localhost:8088,http://localhost:8089,http://localhost}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      SERVER_PORT: '8081'
+    depends_on:
+    - postgres
+    networks:
+    - conectavida-net
+    deploy:
+      labels:
+        conectavida.camada: backend-mobile
+      replicas: ${MOBILE_API_REPLICAS:-3}
+      update_config: *id001
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+      endpoint_mode: dnsrr
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+    - target: 8080
+      published: 8085
+      mode: host
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+    - conectavida-net
+    deploy:
+      labels:
+        conectavida.camada: monitoramento
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      restart_policy:
+        condition: on-failure
+  admin-web:
+    image: ${REGISTRY:-127.0.0.1:5000}/conectavida/admin-web:${TAG:-1.0}
+    ports:
+    - target: 80
+      published: 8088
+      mode: host
+    depends_on:
+    - admin-api
+    networks:
+    - conectavida-net
+    deploy:
+      labels:
+        conectavida.camada: frontend-admin
+      replicas: 2
+      update_config: *id001
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 64M
+  mobile-web:
+    image: ${REGISTRY:-127.0.0.1:5000}/conectavida/mobile-web:${TAG:-1.0}
+    ports:
+    - target: 80
+      published: 8089
+      mode: host
+    depends_on:
+    - mobile-api
+    networks:
+    - conectavida-net
+    deploy:
+      labels:
+        conectavida.camada: frontend-app
+      replicas: 2
+      update_config: *id001
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 64M
+networks:
+  conectavida-net:
+    driver: overlay
+    attachable: true
+volumes:
+  postgres-data: null
+configs:
+  db-schema:
+    file: ./infra/postgres/init/01-schema.sql
+  db-seed:
+    file: ./infra/postgres/init/02-seed.sql

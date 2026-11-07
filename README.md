@@ -53,6 +53,8 @@ Só a demonstração de escalabilidade:
 ./infra/swarm/seminario.sh escalar
 ```
 
+📗 **Manual passo a passo (rodar e apresentar):** [documentacao/MANUAL.md](documentacao/MANUAL.md) · [PDF](documentacao/Manual-Conecta-Vida-Docker.pdf)
+
 📘 Guia completo, com cada Dockerfile e o compose explicados linha a linha: **[documentacao/DOCKER_SWARM.md](documentacao/DOCKER_SWARM.md)**
 🎬 Vídeo: **[documentacao/midia/demo-conectavida-swarm.mp4](documentacao/midia/demo-conectavida-swarm.mp4)**
 

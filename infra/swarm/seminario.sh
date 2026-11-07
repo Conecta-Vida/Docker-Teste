@@ -131,13 +131,24 @@ derrubar() {
     docker rm -f "$w" 2>/dev/null || true
   done
   for id in $(docker node ls -q -f role=worker 2>/dev/null); do docker node rm --force "$id" || true; done
-  echo "Para sair do modo Swarm no manager: docker swarm leave --force"
+
+  # Espera os containers da stack pararem (os volumes só podem ser apagados depois)
+  i=0
+  while [ -n "$(docker ps -q -f label=com.docker.stack.namespace=$STACK)" ] && [ $i -lt 60 ]; do
+    i=$((i+1)); sleep 2
+  done
+
+  if [ "${2:-}" = "--apagar-dados" ]; then
+    passo "Apagando os dados do Postgres e do RabbitMQ (volumes)"
+    docker volume rm ${STACK}_postgres-data ${STACK}_rabbitmq-data 2>/dev/null || true
+  fi
+  echo "Pronto. Para sair do modo Swarm no manager: docker swarm leave --force"
 }
 
 case "${1:-}" in
   subir) subir ;;
   escalar) escalar ;;
   status) status ;;
-  derrubar) derrubar ;;
-  *) echo "Uso: $0 {subir|escalar|status|derrubar}"; exit 1 ;;
+  derrubar) derrubar "$@" ;;
+  *) echo "Uso: $0 {subir|escalar|status|derrubar [--apagar-dados]}"; exit 1 ;;
 esac

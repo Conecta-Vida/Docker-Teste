@@ -296,7 +296,7 @@ Ver o estado do cluster e, ao final, desmontar tudo:
 ```
 
 ```bash
-./infra/swarm/seminario.sh derrubar
+./infra/swarm/seminario.sh derrubar --apagar-dados
 ```
 
 ### Opção B: comando por comando (para explicar cada etapa)

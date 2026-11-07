@@ -1,0 +1,17 @@
+# Contexto de build das imagens Java: só o necessário para o Gradle
+.git
+.gradle
+**/.gradle
+**/build
+**/out
+.idea
+.vscode
+*.iml
+.env
+.env.*
+admin-web
+mobile-app
+documentacao
+infra
+docker-compose*.yml
+*.md

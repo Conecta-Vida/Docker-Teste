@@ -1,0 +1,9 @@
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+    implementation project(':core')
+}
+
+// Gera somente o JAR executável (app.jar), sem o "-plain.jar".
+tasks.named('jar') { enabled = false }
+tasks.named('bootJar') { archiveFileName = 'app.jar' }

@@ -1,55 +1,170 @@
-version: "3.8"
+# =====================================================================
+# Stack Docker Swarm - Conecta Vida
+#   docker stack deploy -c docker-compose.yml conectavida
+#
+# 5 serviços na rede overlay "conectavida-net":
+#   postgres (5432) | rabbitmq (5672/15672) | admin-api (8080)
+#   mobile-api (8081) | visualizer (8085)
+#
+# As imagens das APIs são lidas do registry local do cluster
+# (REGISTRY=127.0.0.1:5000), para que os workers também consigam baixá-las.
+# Veja documentacao/DOCKER_SWARM.md e infra/swarm/seminario.sh.
+# =====================================================================
+
+x-api-env: &api-env
+  DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-conectavida}
+  DB_USERNAME: ${POSTGRES_USER:-conectavida}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:-conectavida}
+  DB_POOL_SIZE: "5"
+  MENSAGERIA_ENABLED: "true"
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_USER: ${RABBITMQ_USER:-conectavida}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-conectavida}
+  CONECTA_API_SALT: ${CONECTA_API_SALT:-troque-este-salt-em-producao}
+  CONECTA_CORS_ORIGINS: ${CONECTA_CORS_ORIGINS:-http://localhost:5173,http://localhost:8088,http://localhost}
+  FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
+  MAIL_USERNAME: ${MAIL_USERNAME:-}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-}
 
 services:
-  api:
-    image: ${REGISTRY_IMAGE:-conecta-vida-api:latest}
-    ports:
-      - "8080:8080"
-    environment:
-      DB_URL: ${DB_URL:?Defina DB_URL no ambiente do manager}
-      DB_USERNAME: ${DB_USERNAME:?Defina DB_USERNAME no ambiente do manager}
-      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no ambiente do manager}
-      MAIL_USERNAME: ${MAIL_USERNAME:-}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-      CONECTA_API_SALT: ${CONECTA_API_SALT:?Defina CONECTA_API_SALT no ambiente do manager}
-      CONECTA_CORS_ORIGINS: ${CONECTA_CORS_ORIGINS:-http://localhost}
-      FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
-    networks:
-      - conecta-net
-    deploy:
-      replicas: 2
-      endpoint_mode: vip
-      placement:
-        max_replicas_per_node: 1
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 768M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
 
-  visualizer:
-    image: dockersamples/visualizer:stable
+  # 1. Banco de dados relacional ------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-conectavida}
+      POSTGRES_USER: ${POSTGRES_USER:-conectavida}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-conectavida}
     ports:
-      - "8081:8080"
+      - "5432:5432"
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - postgres-data:/var/lib/postgresql/data
+    configs:
+      - source: db-schema
+        target: /docker-entrypoint-initdb.d/01-schema.sql
+      - source: db-seed
+        target: /docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U conectavida -d conectavida"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - conecta-net
+      - conectavida-net
     deploy:
       replicas: 1
       placement:
-        constraints:
-          - node.role == manager
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+
+  # 2. Broker de mensageria -----------------------------------------
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-conectavida}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-conectavida}
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # painel web do RabbitMQ
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - conectavida-net
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+
+  # 3. API do painel administrativo ---------------------------------
+  admin-api:
+    image: ${REGISTRY:-127.0.0.1:5000}/conectavida/admin-api:${TAG:-1.0}
+    environment:
+      <<: *api-env
+      SERVER_PORT: "8080"
+    ports:
+      - "8080:8080"
+    depends_on:          # ignorado pelo Swarm; a restart_policy cobre a espera
+      - postgres
+      - rabbitmq
+    networks:
+      - conectavida-net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  # 4. API do aplicativo do cidadão ---------------------------------
+  mobile-api:
+    image: ${REGISTRY:-127.0.0.1:5000}/conectavida/mobile-api:${TAG:-1.0}
+    environment:
+      <<: *api-env
+      SERVER_PORT: "8081"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - conectavida-net
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  # 5. Painel gráfico do cluster ------------------------------------
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8085:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - conectavida-net
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
       restart_policy:
         condition: on-failure
 
 networks:
-  conecta-net:
+  conectavida-net:
     driver: overlay
     attachable: true
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+
+configs:
+  db-schema:
+    file: ./infra/postgres/init/01-schema.sql
+  db-seed:
+    file: ./infra/postgres/init/02-seed.sql

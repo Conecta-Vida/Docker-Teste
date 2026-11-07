@@ -1,0 +1,14 @@
+// Biblioteca compartilhada pelas duas APIs. Não gera JAR executável.
+apply plugin: 'java-library'
+
+dependencies {
+    api 'org.springframework.boot:spring-boot-starter-web'
+    api 'org.springframework.boot:spring-boot-starter-data-jpa'
+    api 'org.springframework.boot:spring-boot-starter-validation'
+    api 'org.springframework.boot:spring-boot-starter-mail'
+    api 'org.springframework.boot:spring-boot-starter-amqp'
+    api 'org.springframework.boot:spring-boot-starter-actuator'
+    api 'com.itextpdf:itext7-core:7.2.5'
+
+    runtimeOnly 'org.postgresql:postgresql'
+}
